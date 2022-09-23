@@ -8,10 +8,11 @@ set -euo pipefail
 readonly LOCAL_MACHINE="danger35"
 readonly INTERFACE_COUNT=2
 readonly PFC="on"
-readonly LRO="on"  # TODO: check this
+readonly LRO="off"  # TODO: check this
 readonly GRO="on"
+readonly GSO="on"
+readonly TX_CACHE="off"
 readonly RING=256
-
 
 log_info() {
 	local msg="$1"
@@ -38,8 +39,18 @@ set_local_interfaces() {
 	tmp_str="if$i"
 	if="${!tmp_str}"
 
-	log_info "Setting local interface $if on $ip"
-    	sudo ifconfig "$if" "$ip" netmask 255.255.255.0 mtu "$mtu"
+	log_info "Setting local interface $if on $ip.."
+    	
+	sudo ifconfig "$if" "$ip" netmask 255.255.255.0 mtu "$mtu"
+	set +euo pipefail
+	sudo ethtool -G "$if" rx "$RING" tx "$RING" &> /dev/null
+	sudo ethtool -K "$if" lro "$LRO" &> /dev/null
+	sudo ethtool -K "$if" gro "$GRO" &> /dev/null
+	sudo ethtool -K "$if" gso "$GSO" &> /dev/null
+	sudo ethtool -A "$if" rx "$PFC" tx "$PFC" &> /dev/null
+	sudo ethtool -K "$if" tx-nocache-copy "$TX_CACHE" &> /dev/null
+	set -euo pipefail
+	
     done
 }
 
