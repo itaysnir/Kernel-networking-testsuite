@@ -5,7 +5,6 @@ set -euo pipefail
 
 
 # Configurable Parameters
-readonly LOCAL_MACHINE="danger35"
 readonly INTERFACE_COUNT=2
 readonly PFC="on"
 readonly LRO="off"  # TODO: check this
@@ -21,8 +20,11 @@ log_info() {
 
 
 load_config() {
+    local setup_name="$1"
+    local setup_config="config_${setup_name}.sh"
+    echo "The config is:$setup_config"
     # shellcheck source=config_danger35.sh
-    source "$(dirname "${BASH_SOURCE[0]}")/config_${LOCAL_MACHINE}.sh"
+    source "$(dirname "${BASH_SOURCE[0]}")/$setup_config"
 }
 
 
@@ -69,9 +71,10 @@ set_interfaces(){
 
 
 main() {
-    load_config
+    local setup_name="$1"
+    load_config "$setup_name"
     set_interfaces
 }
 
 
-main
+main "$1"
