@@ -17,7 +17,7 @@ readonly REMOTE_IP="127.0.0.1"
 readonly REMOTE_PORT=8080
 readonly CHUNK_SIZE=32000
 readonly TIMEOUT=10
-readonly RAMP=3
+readonly RAMP=5
 
 # No need to touch these
 readonly RESULTS_DIR="$TESTS_ROOT/Results"
@@ -79,7 +79,6 @@ run_test_multiple_times() {
 		test_output="$OUT_DIR/test_${i}_raw.txt"
 		log_info "Running $TEST_NAME.. (iteration:$i)"
 		run_test &>> "$test_output" &
-	
 		sleep "$RAMP"	
 		
 		log_info "Collecting data.."
@@ -89,7 +88,6 @@ run_test_multiple_times() {
 #		$COLLECT_PCM_SCRIPT &>> "$OUT_DIR/result_pcm_${i}.txt"
 
 		wait $!
-
 
 	done
 }

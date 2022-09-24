@@ -13,6 +13,8 @@ collect_net_cpu() {
 
     "$BASE"/pylib/sample_cpu.py $(( "$TIME" * 4 )) &
     "$BASE"/pylib/sample_eth.py $(( "$TIME" * 4 )) "$if" &
+
+    wait
 }
 
 
