@@ -67,9 +67,12 @@ init_test() {
 
 
 run_test() {
-	local cmd="$IO_URING_BINARY $REMOTE_IP $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
-	log_info "Running: $cmd"
-	$cmd
+	local i="$1"
+	local cmdline="sudo $IO_URING_BINARY $REMOTE_IP $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
+	#shellcheck disable=SC2086
+	sudo -E "$PERF" stat -D $(( RAMP * 1000 )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$OUT_DIR/perf_stat_${i}.txt" --append ${cmdline} | tee -a "$OUT_DIR/io_uring_${i}.txt"
+
+	dmesg | tail -n 90 >> "$OUT_DIR/dmesg_${i}.txt"
 }
 
 
@@ -78,7 +81,9 @@ run_test_multiple_times() {
 	for i in $(seq "$REPEAT_COUNT"); do
 		test_output="$OUT_DIR/test_${i}_raw.txt"
 		log_info "Running $TEST_NAME.. (iteration:$i)"
-		run_test &>> "$test_output" &
+			
+		run_test "$i" &>> "$test_output" &
+		
 		sleep "$RAMP"	
 		
 		log_info "Collecting data.."
