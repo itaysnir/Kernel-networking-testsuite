@@ -17,12 +17,14 @@ readonly REMOTE_IP="127.0.0.1"
 readonly REMOTE_PORT=8080
 readonly CHUNK_SIZE=32000
 readonly TIMEOUT=5
+readonly RAMP=3
 
 # No need to touch these
 readonly RESULTS_DIR="$TESTS_ROOT/Results"
 readonly DATE="$(date +%y_%m_%d-%H:%M:%S)"
 readonly OUT_DIR="$RESULTS_DIR/$TEST_NAME/$DATE"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
+readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
 
 
 log_info() {
@@ -53,12 +55,12 @@ init_test() {
 		log_error "No ncat on the machine. Try: sudo apt install ncat"
 	fi
 	
-	if [ -z "$(ps -fade | grep -i ncat | grep $REMOTE_PORT)" ]; then
+	if [ -z "$(pgrep -x ncat)" ]; then
 		"$(command -v ncat)" -e "$(command -v cat)" -k -l "$REMOTE_PORT" &
 		log_info "Successfully launched ncat echo server on $REMOTE_IP:$REMOTE_PORT"
 		sleep 0.5
 	else 
-		log_info "ncat already running on port $REMOTE_PORT"
+		log_info "ncat already running"
 	fi
 }
 
@@ -73,16 +75,22 @@ run_test() {
 run_test_multiple_times() {
 	local test_output
 	for i in $(seq "$REPEAT_COUNT"); do
-		log_info "Running $TEST_NAME.. (iteration:$i)"
 		test_output="$OUT_DIR/test_${i}_raw.txt"
+		log_info "Running $TEST_NAME.. (iteration:$i)"
 		run_test &>> "$test_output" &
 	
-		sleep 3	
-		$COLLECT_SCRIPT &>> "$OUT_DIR/result_${i}.txt"
+		sleep "$RAMP"	
 		
+		log_info "Collecting data.."
+		$COLLECT_SCRIPT &>> "$OUT_DIR/result_${i}.txt"
+		$COLLECT_PCM_SCRIPT &>> "$OUT_DIR/result_pcm_${i}.txt"
+
 		wait $!
+
+
 	done
 }
+
 
 main() {
 	init_env

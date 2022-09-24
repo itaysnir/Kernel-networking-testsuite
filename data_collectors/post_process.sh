@@ -1,8 +1,7 @@
 #!/bin/bash
 
 export HOME=/homes/itaysnir
-perf=/homes/markuze/copy/tools/perf/perf
-
+perf="/homes/itaysnir/linux-stable/tools/perf/perf"
 function report_functions {
 	echo " in report_functions"
 	#sudo /homes/markuze/copy/tools/perf/perf report --stdio --max-stack 0 --percent-limit 0.01  >> $OUT_FILE/perf.txt
