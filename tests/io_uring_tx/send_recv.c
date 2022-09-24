@@ -20,22 +20,22 @@
 #define CHUNK (16<<12)
 #define CHUNK_NUM 2000
 #define MAX CHUNK*CHUNK_NUM
-#define PORT 8080
 #define SA struct sockaddr
 
-//char buff[IO_URING_CHUNK];
-char buff[1];
-
-// Itay deleted old port
-#define HOST	"132.68.206.135"
+void *buff;
 
 
-static int do_send(void)
+static int do_send(const char* host, int port, int chunk_size, int timeout)
 {
+	buff = malloc(chunk_size);
+	if (!buff) {
+		fprintf(stderr, "do_send: malloc failed\n");
+		return 1;
+	}
 	struct sockaddr_in saddr;
 	struct iovec iov = {
 		.iov_base = buff,
-		.iov_len = sizeof(buff),
+		.iov_len = chunk_size,
 	};
 	struct io_uring ring;
 	struct io_uring_cqe *cqe;
@@ -50,8 +50,8 @@ static int do_send(void)
 
 	memset(&saddr, 0, sizeof(saddr));
 	saddr.sin_family = AF_INET;
-	saddr.sin_port = htons(PORT);
-	inet_pton(AF_INET, HOST, &saddr.sin_addr);
+	saddr.sin_port = htons(port);
+	inet_pton(AF_INET, host, &saddr.sin_addr);
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
@@ -65,7 +65,7 @@ static int do_send(void)
 		return 1;
 	}
 
-	time_t endwait = time(NULL) + 10;
+	time_t endwait = time(NULL) + timeout;
 
 	uint64_t counter=0;	
 	while (time(NULL) < endwait){
@@ -93,7 +93,7 @@ static int do_send(void)
 	counter++;
 	}
 
-	printf("Packets send:%lu\n", counter);
+	printf("Packets sent:%lu\n", counter);
 	close(sockfd);
 	return 0;
 err:
@@ -101,9 +101,9 @@ err:
 	return 1;
 }
 
-static int test(int use_sqthread, int regfiles)
+static int test(const char *host, int port, int chunk_size, int timeout)
 {
-	do_send();
+	do_send(host, port, chunk_size, timeout);
 	return 0;
 }
 
@@ -111,24 +111,14 @@ int main(int argc, char *argv[])
 {
 	int ret;
 
-	if (argc > 1)
+	if (argc != 5) {
+		fprintf(stderr, "Usage: %s <REMOTE_IP> <REMOTE_PORT> <CHUNK_SIZE> <TIMEOUT>\n", argv[0]);
 		return 0;
-
-	ret = test(0, 0);
+	}
+	
+	ret = test(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
 	if (ret) {
 		fprintf(stderr, "test sqthread=0 failed\n");
-		return ret;
-	}
-
-	ret = test(1, 1);
-	if (ret) {
-		fprintf(stderr, "test sqthread=1 reg=1 failed\n");
-		return ret;
-	}
-
-	ret = test(1, 0);
-	if (ret) {
-		fprintf(stderr, "test sqthread=1 reg=0 failed\n");
 		return ret;
 	}
 
