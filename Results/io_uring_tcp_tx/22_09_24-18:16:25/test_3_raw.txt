@@ -1,1 +1,0 @@
-./run_io_uring.sh: line 41: cmd: command not found
