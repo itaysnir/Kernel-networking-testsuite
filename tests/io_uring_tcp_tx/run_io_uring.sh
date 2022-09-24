@@ -16,13 +16,14 @@ readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/send_recv.t"
 readonly REMOTE_IP="127.0.0.1"
 readonly REMOTE_PORT=8080
 readonly CHUNK_SIZE=32000
-readonly TIMEOUT=5
+readonly TIMEOUT=10
 readonly RAMP=3
 
 # No need to touch these
 readonly RESULTS_DIR="$TESTS_ROOT/Results"
 readonly DATE="$(date +%y_%m_%d-%H:%M:%S)"
 readonly OUT_DIR="$RESULTS_DIR/$TEST_NAME/$DATE"
+readonly COLLECT_CPU="$TESTS_ROOT/data_collectors/collect_net_cpu.sh"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
 readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
 
@@ -82,8 +83,10 @@ run_test_multiple_times() {
 		sleep "$RAMP"	
 		
 		log_info "Collecting data.."
-		$COLLECT_SCRIPT &>> "$OUT_DIR/result_${i}.txt"
-		$COLLECT_PCM_SCRIPT &>> "$OUT_DIR/result_pcm_${i}.txt"
+	
+		$COLLECT_CPU "$if1" &>> "$OUT_DIR/result_cpu_${i}.txt"	
+#		$COLLECT_SCRIPT &>> "$OUT_DIR/result_${i}.txt"
+#		$COLLECT_PCM_SCRIPT &>> "$OUT_DIR/result_pcm_${i}.txt"
 
 		wait $!
 
