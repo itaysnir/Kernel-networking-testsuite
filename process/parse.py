@@ -31,7 +31,7 @@ parsers = {
 'cpu.txt' : read_net_cpu,
 'memory.txt' : read_memory,
 'fio.terse' : read_fio,
-'perf_stat' : read_perf_stat,
+'perf_stat.txt' : read_perf_stat,
 'dmesg_nvme_trace.txt' : read_dmesg_nvme_trace,
 'dmesg_tls_trace.txt' : read_dmesg_tls_trace,
 'nginx.txt' : read_wrk,
@@ -50,9 +50,6 @@ def parse(d):
         if not f.endswith('.txt') and not f.endswith('.terse') and not f.endswith('.out'):
             print('[-] Skipping parsing non-txt/terse/out file %s' % fname)
             continue
-        
-        # Itay addition
-        fname = fname.split('.')[0][:-2]
 
         if fname not in parsers.keys():
             print('[-] Skipping parsing unknown file %s' % fname)
