@@ -122,7 +122,13 @@ run_test_multiple_times() {
 
 
 finalize() {
-	log_info "Test complete. Check results at:$OUT_DIR"
+	log_info "Test complete. Generating plots.."
+	$TESTS_ROOT/process/parse.py "$TESTS_ROOT/Results/$TEST_NAME" &> /dev/null
+
+#	local setup_csv="$TEST_NAME/setup.csv"
+#	local filter_csv="$TEST_NAME/filter.csv"
+
+	log_info "Check results at:$OUT_DIR"
 }
 
 
