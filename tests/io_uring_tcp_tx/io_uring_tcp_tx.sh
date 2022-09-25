@@ -5,7 +5,7 @@ set -euo pipefail
 
 
 # Configurable parameters
-readonly TEST_NAME="io_uring_tcp_tx"
+readonly TEST_NAME="$(basename -s .sh "$0")"
 readonly SETUP_NAME="danger36"
 readonly TESTS_ROOT="/homes/itaysnir/Kernel-networking-testsuite"
 readonly PERF="/homes/itaysnir/linux-stable/tools/perf/perf"
@@ -98,11 +98,18 @@ run_test_multiple_times() {
 }
 
 
+finalize() {
+	log_info "Test complete. Check results at:$OUT_DIR"
+}
+
+
 main() {
 	init_env
 	init_test
 	run_test_multiple_times "$REPEAT_COUNT"
+	finalize
 }
+
 
 main
 

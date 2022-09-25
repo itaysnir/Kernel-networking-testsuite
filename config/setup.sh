@@ -12,6 +12,8 @@ readonly GRO="on"
 readonly GSO="on"
 readonly TX_CACHE="off"
 readonly RING=256
+readonly SOCK_SIZE=$(( 256 * 1024 * 1024))
+
 
 log_info() {
 	local msg="$1"
@@ -96,17 +98,17 @@ set_kernel_settings() {
 	fi
 
 	if [ -e "$PERF_PARANOID" ]; then
-		echo -1 | sudo tee "$PERF_PARANOID"
+		echo -1 | sudo tee "$PERF_PARANOID" &> /dev/null
 		log_info "Performance counters enabled"
 	fi
 
 	if [ -e "$KPTR_RESTRICT" ]; then
-		echo 0 | sudo tee "$KPTR_RESTRICT"
+		echo 0 | sudo tee "$KPTR_RESTRICT" &> /dev/null
 		log_info "Kernel pointers visibility enabled"
 	fi
 
 	if [ -e "$NO_TURBO" ]; then
-		echo 1 | sudo tee "$NO_TURBO"
+		echo 1 | sudo tee "$NO_TURBO" &> /dev/null
 		log_info "Turbo boost disabled"
 	fi
 
@@ -115,6 +117,11 @@ set_kernel_settings() {
 	       	exit 1
 	fi
 
+	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/optmem_max"
+	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/rmem_max"
+	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/wmem_max"
+	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/rmem_default"
+	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/wmem_default"
 
 }
 
