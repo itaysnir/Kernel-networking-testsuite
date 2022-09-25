@@ -27,6 +27,7 @@ readonly COLLECT_CPU="$TESTS_ROOT/data_collectors/collect_net_cpu.sh"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
 readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
 readonly MS_IN_SEC=1000
+readonly IRQ_CPU=0
 
 
 log_info() {
@@ -49,6 +50,10 @@ init_env() {
 	# shellcheck source=/homes/itaysnir/Kernel-networking-testsuite/config/config_danger36.sh
 	source "$TESTS_ROOT/config/config_${SETUP_NAME}.sh"
 	$TESTS_ROOT/config/setup.sh "$SETUP_NAME"
+	
+	$TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
+	log_info "IRQ affinity set to CPU ${IRQ_CPU}"
+	# TODO: also add cpu affinity for remote host
 }
 
 
