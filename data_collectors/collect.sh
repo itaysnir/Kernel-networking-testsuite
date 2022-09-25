@@ -44,7 +44,9 @@ function collect_pcm {
 	echo " out collect pcm" >&2
 }
 
-[ "$collect_cpu" != "no" ] && collect_cpu
+
+# Itay commented this, no need as we call collect_cpu.sh
+#[ "$collect_cpu" != "no" ] && collect_cpu
 [ "$collect_pstats" != "no" ] && collect_pstats
 [ "$collect_mem_bw" != "no" ] && collect_mem_bw
 #[ "$collect_functions" != "no" ] && collect_functions
