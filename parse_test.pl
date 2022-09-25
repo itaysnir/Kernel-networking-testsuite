@@ -8,6 +8,7 @@ use File::Grep qw (fgrep);
 use Cwd 'abs_path';
 use Switch;
 
+my $TEST_SOURCE="/homes/itaysnir/Kernel-networking-testsuite";
 my $OUT_DIR="/homes/itaysnir/Kernel-networking-testsuite/plots";
 
 my %sort = (
@@ -486,7 +487,10 @@ sub plot_results {
 	my $test_dir = shift;
 	my $name = "$test_dir/results.out";
 	my $test_name = basename(dirname($name));
-	my $file_path = dirname(abs_path($0))."/Gnuplot";
+	#	my $file_path = dirname(abs_path($0))."/Gnuplot";
+	
+	my $file_path = "$TEST_SOURCE/Gnuplot";
+	printf "Filepath: $file_path\n";
 
 	qx(mkdir -p $OUT_DIR/$test_name; rm -f $file_path/*.eps);
 
@@ -534,8 +538,8 @@ printf "working on $dir\n";
 for my $test (@tests) {
 	parse_test $test;
 	## When possible create pm file and sepparate parse from plot
-
-	# Itay - Add this back
-	#	plot_results $test;
+	if (-d $test) {
+		plot_results $test;
+	}
 }
 
