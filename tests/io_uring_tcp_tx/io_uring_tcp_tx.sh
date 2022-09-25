@@ -121,12 +121,17 @@ run_test_multiple_times() {
 }
 
 
-finalize() {
+generate_plots() {
+	local setup_csv="$TESTS_ROOT/Results/$TEST_NAME/setup.csv"
+	local filter_csv="$TESTS_ROOT/Results/$TEST_NAME/filter.csv"
+	local filter_csv_1="$filter_csv.1"
+
 	log_info "Test complete. Generating plots.."
 	$TESTS_ROOT/process/parse.py "$TESTS_ROOT/Results/$TEST_NAME" &> /dev/null
 
-#	local setup_csv="$TEST_NAME/setup.csv"
-#	local filter_csv="$TEST_NAME/filter.csv"
+	$TESTS_ROOT/process/filter.py "$setup_csv" > "$filter_csv"
+
+	head -n 1 "$filter_csv" > "$filter_csv_1"
 
 	log_info "Check results at:$OUT_DIR"
 }
@@ -136,7 +141,7 @@ main() {
 	init_env
 	init_test
 	run_test_multiple_times "$REPEAT_COUNT"
-	finalize
+	generate_plots	
 }
 
 
