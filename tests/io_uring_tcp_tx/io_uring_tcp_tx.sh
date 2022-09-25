@@ -9,7 +9,7 @@ readonly TEST_NAME="$(basename -s .sh "$0")"
 readonly SETUP_NAME="danger36"
 readonly TESTS_ROOT="/homes/itaysnir/Kernel-networking-testsuite"
 readonly PERF="/homes/itaysnir/linux-stable/tools/perf/perf"
-readonly REPEAT_COUNT=3
+readonly REPEAT_COUNT=1
 
 # Test Specific Config
 readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/send_io_uring.t"
