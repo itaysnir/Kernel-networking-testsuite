@@ -91,9 +91,11 @@ run_test_multiple_times() {
 	local collect_pid
 	local collect_pcm_pid
 	local test_output
+	local test_dir
 	
 	for i in $(seq "$REPEAT_COUNT"); do
-		test_output="$OUT_DIR-$i/test_raw.txt"
+		test_dir="$OUT_DIR-$i"
+		test_output="$test_dir/test_raw.txt"
 		log_info "Running ${TEST_NAME}.. (iteration:$i)"
 			
 		run_test "$i" &>> "$test_output" &
@@ -102,13 +104,13 @@ run_test_multiple_times() {
 		sleep "$RAMP"	
 		log_info "Collecting data.."
 	
-		$COLLECT_CPU "$if1" &>> "$OUT_DIR-$i/result_cpu.txt" &
+		$COLLECT_CPU "$if1" "$test_dir" &> /dev/null &
 		collect_cpu_pid=$!
 		
-		$COLLECT_SCRIPT &>> "$OUT_DIR-$i/result.txt" &
+		$COLLECT_SCRIPT &>> "$test_dir/result.txt" &
 		collect_pid=$!
 
-		$COLLECT_PCM_SCRIPT &>> "$OUT_DIR-$i/result_pcm.txt" &
+		$COLLECT_PCM_SCRIPT &>> "$test_dir/result_pcm.txt" &
 		collect_pcm_pid=$!
 
 		wait "$test_pid"

@@ -115,7 +115,7 @@ def align_std(x):
     return 0 if (x < 0.0001) else x
 
 def _read_net_cpu(f):
-    data = open(f, 'rb').read()
+    data = open(f, 'r').read()
     #enp4s0f1_rx_packets: 1179901
     res = {}
     for l in data.split('\n'):
