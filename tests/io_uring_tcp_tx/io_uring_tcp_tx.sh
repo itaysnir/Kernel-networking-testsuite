@@ -12,7 +12,7 @@ readonly PERF="/homes/itaysnir/linux-stable/tools/perf/perf"
 readonly REPEAT_COUNT=3
 
 # Test Specific Config
-readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/send_recv.t"
+readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/send_io_uring.t"
 readonly REMOTE_IP="127.0.0.1"
 readonly REMOTE_PORT=8080
 readonly CHUNK_SIZE=32000
@@ -26,6 +26,7 @@ readonly OUT_DIR="$RESULTS_DIR/$TEST_NAME/$DATE"
 readonly COLLECT_CPU="$TESTS_ROOT/data_collectors/collect_net_cpu.sh"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
 readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
+readonly MS_IN_SEC=1000
 
 
 log_info() {
@@ -47,7 +48,7 @@ init_env() {
 
 	# shellcheck source=/homes/itaysnir/Kernel-networking-testsuite/config/config_danger36.sh
 	source "$TESTS_ROOT/config/config_${SETUP_NAME}.sh"
-	$TESTS_ROOT/config/setup.sh $SETUP_NAME
+	$TESTS_ROOT/config/setup.sh "$SETUP_NAME"
 }
 
 
@@ -70,7 +71,7 @@ run_test() {
 	local i="$1"
 	local cmdline="sudo $IO_URING_BINARY $REMOTE_IP $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
 	#shellcheck disable=SC2086
-	sudo -E "$PERF" stat -D $(( RAMP * 1000 )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$OUT_DIR/perf_stat_${i}.txt" --append ${cmdline} | tee -a "$OUT_DIR/io_uring_${i}.txt"
+	sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$OUT_DIR/perf_stat_${i}.txt" --append ${cmdline} | tee -a "$OUT_DIR/io_uring_${i}.txt"
 
 	dmesg | tail -n 90 >> "$OUT_DIR/dmesg_${i}.txt"
 }
@@ -81,11 +82,11 @@ run_test_multiple_times() {
 	local collect_cpu_pid
 	local collect_pid
 	local collect_pcm_pid
-
 	local test_output
+	
 	for i in $(seq "$REPEAT_COUNT"); do
 		test_output="$OUT_DIR/test_${i}_raw.txt"
-		log_info "Running $TEST_NAME.. (iteration:$i)"
+		log_info "Running ${TEST_NAME}.. (iteration:$i)"
 			
 		run_test "$i" &>> "$test_output" &
 		test_pid=$!
@@ -99,7 +100,7 @@ run_test_multiple_times() {
 		$COLLECT_SCRIPT &>> "$OUT_DIR/result_${i}.txt" &
 		collect_pid=$!
 
-		$COLLECT_PCM_SCRIPT &>> "$OUT_DIR/result_pcm_${i}.txt"
+		$COLLECT_PCM_SCRIPT &>> "$OUT_DIR/result_pcm_${i}.txt" &
 		collect_pcm_pid=$!
 
 		wait "$test_pid"
