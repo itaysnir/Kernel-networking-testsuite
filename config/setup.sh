@@ -5,6 +5,7 @@ set -euo pipefail
 
 
 # Configurable Parameters
+readonly TESTS_ROOT="/homes/itaysnir/Kernel-networking-testsuite"
 readonly INTERFACE_COUNT=1
 readonly PFC="on"
 readonly TSO="off"
@@ -14,6 +15,7 @@ readonly GSO="on"
 readonly TX_CACHE="off"
 readonly RING=256
 readonly SOCK_SIZE=$(( 256 * 1024 * 1024))
+readonly IRQ_CPU=0
 
 
 log_info() {
@@ -158,6 +160,20 @@ set_kernel_settings() {
 }
 
 
+set_cpu_affinity() {
+	local setup_name="$1"
+	# Note: this function first uploads the tests scripts to the remote host
+	 ssh "$loader1" sudo rsync -av --exclude 'Results' --exclude '.git' "$setup_name:$TESTS_ROOT" "$TESTS_ROOT"
+        log_info "Uploaded scripts to remote machine"
+
+        $TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
+        log_info "Set local IRQ affinity to CPU ${IRQ_CPU}"
+
+        ssh "$loader1" sudo $TESTS_ROOT/scripts/set_irq_affinity.sh "$dif1" &> /dev/null
+        log_info "Set remote IRQ affinity"
+}
+
+
 set_interfaces(){
     set_local_interfaces
     set_remote_interfaces
@@ -169,6 +185,7 @@ main() {
     load_config "$setup_name"
     set_interfaces
     set_kernel_settings
+    set_cpu_affinity "$setup_name"
 }
 
 
