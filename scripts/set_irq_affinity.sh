@@ -4,7 +4,7 @@ if [ -z $1 ]; then
 	exit 1
 fi
 
-source ~borisp/scripts/common_irq_affinity.sh
+source /homes/itaysnir/Kernel-networking-testsuite/scripts/common_irq_affinity.sh
 
 CORES=$((`cat /proc/cpuinfo | grep processor | tail -1 | awk '{print $3}'`+1))
 hop=1
