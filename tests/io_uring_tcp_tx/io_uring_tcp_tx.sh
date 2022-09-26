@@ -12,7 +12,7 @@ readonly PERF="/homes/itaysnir/linux-stable/tools/perf/perf"
 readonly REPEAT_COUNT=3
 
 # Test Specific Config
-readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/send_io_uring.t"
+readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/io_uring_tcp_tx"
 readonly REMOTE_IP="10.1.4.35"
 readonly REMOTE_PORT=8080
 readonly CHUNK_SIZE=32000
