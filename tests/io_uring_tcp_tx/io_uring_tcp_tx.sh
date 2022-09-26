@@ -60,19 +60,18 @@ init_env() {
 }
 
 
-init_test() {
+run_nc() {
 	if [ -z "$(ssh $loader1 command -v nc)" ]; then 
-		log_error "No ncat on the remote machine. Try: sudo apt install nc"
+		log_error "No nc on the remote machine. Try: sudo apt install nc"
 		exit 1
 	fi
 	
 	if [ -z "$(ssh $loader1 pgrep -x nc)" ]; then
-#		"$(command -v ncat)" -e "$(command -v cat)" -k -l "$REMOTE_PORT" &
 		ssh $loader1 "nc -l -s $REMOTE_IP -p $REMOTE_PORT &" &
 		log_info "Successfully launched nc server on $REMOTE_IP:$REMOTE_PORT"
 		sleep 0.5
 	else 
-		log_info "ncat already running"
+		log_info "nc already running"
 	fi
 }
 
@@ -100,6 +99,8 @@ run_test_multiple_times() {
 		test_output="$test_dir/test_raw.txt"
 		log_info "Running ${TEST_NAME}.. (iteration:$i)"
 			
+		run_nc
+
 		run_test "$i" &>> "$test_output" &
 		test_pid=$!
 
@@ -141,7 +142,6 @@ generate_plots() {
 
 main() {
 	init_env
-	init_test
 	run_test_multiple_times "$REPEAT_COUNT"
 	generate_plots	
 }
