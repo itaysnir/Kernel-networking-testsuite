@@ -57,11 +57,22 @@ init_env() {
 
 
 run_nc() {
+	local pids
+
 	if [ -z "$(ssh $loader1 command -v nc)" ]; then 
 		log_error "No nc on the remote machine. Try: sudo apt install nc"
 		exit 1
 	fi
-	
+
+	set +euo pipefail
+	pids=$(ssh "$loader1" pgrep -f $REMOTE_PORT)
+	if [ -n "$pids" ]; then
+		ssh "$loader1" "sudo kill -9 $pids"	
+		sleep 0.5
+		log_info "Killed processes listening on remote port $REMOTE_PORT"
+	fi
+	set -euo pipefail
+
 	if [ -z "$(ssh $loader1 pgrep -x nc)" ]; then
 		ssh $loader1 "nc -l -s $REMOTE_IP -p $REMOTE_PORT &" &
 		log_info "Successfully launched nc server on $REMOTE_IP:$REMOTE_PORT"
