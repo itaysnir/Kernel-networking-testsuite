@@ -1,0 +1,16 @@
+#reset
+set terminal postscript eps noenhanced color 12
+set output 'FILE_NAME.eps'
+
+#set style data histograms
+#set style histogram #cluster
+
+set grid
+unset key
+set yrange [0:]
+set xrange [0:XRANGE]
+set ylabel "VAL_NAME"
+set boxwidth 0.8
+set xtics rotate by -35
+
+plot 'data.dat' u 1:3:4:xtic(2) with boxerrorbars

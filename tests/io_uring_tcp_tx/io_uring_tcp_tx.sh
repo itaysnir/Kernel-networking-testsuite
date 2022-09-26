@@ -55,7 +55,7 @@ init_env() {
 	$TESTS_ROOT/config/setup.sh "$SETUP_NAME"
 	log_info "Set local configurations"
 
-	ssh "$loader1" sudo rsync -av --exclude 'Results' "$SETUP_NAME:$TESTS_ROOT" "$TESTS_ROOT"
+	ssh "$loader1" sudo rsync -av --exclude 'Results' --exclude '.git' "$SETUP_NAME:$TESTS_ROOT" "$TESTS_ROOT"
 	log_info "Uploaded scripts to remote machine"
 
 	$TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
@@ -77,7 +77,7 @@ run_nc() {
 		log_info "Successfully launched nc server on $REMOTE_IP:$REMOTE_PORT"
 		sleep 0.5
 	else 
-		log_info "nc already running"
+		log_info "nc already running on $REMOTE_IP:$REMOTE_PORT"
 	fi
 }
 
