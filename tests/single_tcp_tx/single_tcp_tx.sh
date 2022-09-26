@@ -12,7 +12,7 @@ readonly PERF="/homes/itaysnir/linux-stable/tools/perf/perf"
 readonly REPEAT_COUNT=3
 
 # Test Specific Config
-readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/send_io_uring.t"
+readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/io_uring_tcp_tx"
 readonly REMOTE_IP="10.1.4.35"
 readonly REMOTE_PORT=8080
 readonly CHUNK_SIZE=32000
@@ -27,7 +27,6 @@ readonly COLLECT_CPU="$TESTS_ROOT/data_collectors/collect_net_cpu.sh"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
 readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
 readonly MS_IN_SEC=1000
-readonly IRQ_CPU=0
 
 
 log_info() {
@@ -53,40 +52,38 @@ init_env() {
 	# shellcheck source=/homes/itaysnir/Kernel-networking-testsuite/config/config_danger36.sh
 	source "$TESTS_ROOT/config/config_${SETUP_NAME}.sh"
 	$TESTS_ROOT/config/setup.sh "$SETUP_NAME"
-	log_info "Set local configurations"
-
-	ssh "$loader1" sudo rsync -av --exclude 'Results' --exclude '.git' "$SETUP_NAME:$TESTS_ROOT" "$TESTS_ROOT"
-	log_info "Uploaded scripts to remote machine"
-
-	$TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
-	log_info "Set local IRQ affinity to CPU ${IRQ_CPU}"
-
-	ssh "$loader1" sudo $TESTS_ROOT/scripts/set_irq_affinity.sh "$dif1" &> /dev/null 
-	log_info "Set remote IRQ affinity"
+	log_info "Local configurations set"
 }
 
 
-run_nc() {
-	if [ -z "$(ssh $loader1 command -v nc)" ]; then 
+run_netserver() {
+	local pids
+
+	if [ -z "$(ssh $loader1 command -v netserver)" ]; then 
 		log_error "No nc on the remote machine. Try: sudo apt install nc"
 		exit 1
 	fi
-	
-	if [ -z "$(ssh $loader1 pgrep -x nc)" ]; then
-		ssh $loader1 "nc -l -s $REMOTE_IP -p $REMOTE_PORT &" &
-		log_info "Successfully launched nc server on $REMOTE_IP:$REMOTE_PORT"
+
+	set +euo pipefail
+	pids=$(ssh "$loader1" pgrep -f $REMOTE_PORT)
+	if [ -n "$pids" ]; then
+		ssh "$loader1" "sudo kill -9 $pids"	
 		sleep 0.5
-	else 
-		log_info "nc already running on $REMOTE_IP:$REMOTE_PORT"
+		log_info "Killed processes listening on remote port $REMOTE_PORT"
 	fi
+	set -euo pipefail
+
+
+	ssh $loader1 "sudo netserver -p $REMOTE_PORT"
+	log_info "Launched netserver on $REMOTE_IP:$REMOTE_PORT"
 }
 
 
 run_test() {
 	local i="$1"
-	local cmdline="sudo $IO_URING_BINARY $REMOTE_IP $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
+	local cmdline="sudo netperf -H $dip1 -p $REMOTE_PORT -t TCP_STREAM -T 1,1 -l $TIMEOUT -- -m$CHUNK_SIZE -s16M"
 	#shellcheck disable=SC2086
-	sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$OUT_DIR-$i/perf_stat.txt" --append ${cmdline} | tee -a "$OUT_DIR-$i/io_uring.txt"
+	sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$OUT_DIR-$i/perf_stat.txt" --append ${cmdline} | tee -a "$OUT_DIR-$i/single_tcp.txt"
 
 	dmesg | tail -n 90 >> "$OUT_DIR-$i/dmesg.txt"
 }
@@ -105,7 +102,7 @@ run_test_multiple_times() {
 		test_output="$test_dir/test_raw.txt"
 		log_info "Running ${TEST_NAME}.. (iteration:$i)"
 			
-		run_nc
+		run_netserver
 
 		run_test "$i" &>> "$test_output" &
 		test_pid=$!
