@@ -149,6 +149,7 @@ def _read_net_cpu(f):
 
 def read_net_cpu(f):
     res = _read_net_cpu(f)
+
     res['Total_tx_bw'] = res['Total_rx_bw'] = res['Total_tx_bytes'] = res['Total_rx_bytes'] = res['Total_tx_packets'] =  res['Total_rx_packets'] =  0
     for k,v in res.items():
         #print k
@@ -171,6 +172,7 @@ def read_net_cpu(f):
             #print k
             res['Total_rx_packets'] += float(v)
     #print res['Total_tx_bw'], res['Total_rx_bw'], res['Total_tx_bytes'], res['Total_rx_bytes'], res['Total_tx_packets'], res['Total_rx_packets']
+
     return res
 
 '''

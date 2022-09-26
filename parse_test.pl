@@ -188,6 +188,7 @@ sub parse_line {
 
 	## proc/stat lines cpu: num
 	if ($line =~ /^(\w*)\s*:\s*([\d\.]+)/) {
+		printf "Got proc stat line";
 		$$hash{$1} = [] unless (exists $$hash{$1});
 		push (@{$$hash{$1}}, $2);
 		return;
@@ -195,6 +196,7 @@ sub parse_line {
 
 	## perf line 3444 cycles
 	if ($line =~ /^\s*(\d+)\s+([\w-]+)/) {
+		printf "Got perf cycles line";
 		$$hash{$2} = [] unless (exists $$hash{$2});
 		push (@{$$hash{$2}}, $1);
 		return;
@@ -203,6 +205,7 @@ sub parse_line {
 	## pcm-mem.x Throughput(MB/s):
 
 	if ($line =~ /(\w+)\s+Throughput\(MB\/s\):\s*([\d\.]+)/) {
+		printf "Parsing throughput";
 		$$hash{$1} = [] unless (exists $$hash{$1});
 		push (@{$$hash{$1}}, $2);
 		return;
@@ -539,7 +542,7 @@ for my $test (@tests) {
 	parse_test $test;
 	## When possible create pm file and sepparate parse from plot
 	if (-d $test) {
-		plot_results $test;
+		#		plot_results $test;
 	}
 }
 

@@ -4,7 +4,8 @@ from os.path import isdir, basename, dirname
 from glob import glob
 from perf_util import read_net_cpu, read_memory, read_fio, read_perf_stat,\
                       read_dmesg_nvme_trace, read_wrk, read_memt_out,\
-                      read_dmesg_tls_trace, read_iperf, read_tls_decrypted
+                      read_dmesg_tls_trace, read_iperf, read_tls_decrypted, \
+                      _read_net_cpu
 
 def hash2csv(name, res):
     cols = []
@@ -28,7 +29,7 @@ def hash2csv(name, res):
 
 parsers = {
 'eth.txt' : read_net_cpu,
-'cpu.txt' : read_net_cpu,
+'cpu.txt' : _read_net_cpu,
 'memory.txt' : read_memory,
 'fio.terse' : read_fio,
 'perf_stat.txt' : read_perf_stat,
@@ -47,6 +48,7 @@ def parse(d):
     for f in files:
         #fname = f.split('/')[-1]
         fname = basename(f)
+        
         if not f.endswith('.txt') and not f.endswith('.terse') and not f.endswith('.out'):
             print('[-] Skipping parsing non-txt/terse/out file %s' % fname)
             continue
@@ -55,7 +57,10 @@ def parse(d):
             print('[-] Skipping parsing unknown file %s' % fname)
             continue
         print('[+] Parsing file %s' % fname)
+
         res.update(parsers[fname](f))
+
+    
     return res
 
 def parse_base(d):
