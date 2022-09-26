@@ -43,7 +43,6 @@ set_local_interfaces() {
 
     local i
     for i in $(seq "$INTERFACE_COUNT"); do
-	echo "number: $i"
 	tmp_str="ip$i"
     	ip="${!tmp_str}"
 

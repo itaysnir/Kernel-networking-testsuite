@@ -13,7 +13,7 @@ readonly REPEAT_COUNT=3
 
 # Test Specific Config
 readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/send_io_uring.t"
-readonly REMOTE_IP="127.0.0.1"
+readonly REMOTE_IP="10.1.4.35"
 readonly REMOTE_PORT=8080
 readonly CHUNK_SIZE=32000
 readonly TIMEOUT=10
@@ -61,13 +61,15 @@ init_env() {
 
 
 init_test() {
-	if [ -z "$(command -v ncat)" ]; then 
-		log_error "No ncat on the machine. Try: sudo apt install ncat"
+	if [ -z "$(ssh $loader1 command -v nc)" ]; then 
+		log_error "No ncat on the remote machine. Try: sudo apt install nc"
+		exit 1
 	fi
 	
-	if [ -z "$(pgrep -x ncat)" ]; then
-		"$(command -v ncat)" -e "$(command -v cat)" -k -l "$REMOTE_PORT" &
-		log_info "Successfully launched ncat echo server on $REMOTE_IP:$REMOTE_PORT"
+	if [ -z "$(ssh $loader1 pgrep -x nc)" ]; then
+#		"$(command -v ncat)" -e "$(command -v cat)" -k -l "$REMOTE_PORT" &
+		ssh $loader1 "nc -l -s $REMOTE_IP -p $REMOTE_PORT &" &
+		log_info "Successfully launched nc server on $REMOTE_IP:$REMOTE_PORT"
 		sleep 0.5
 	else 
 		log_info "ncat already running"
