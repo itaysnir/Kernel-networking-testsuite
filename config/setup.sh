@@ -5,7 +5,7 @@ set -euo pipefail
 
 
 # Configurable Parameters
-readonly INTERFACE_COUNT=2
+readonly INTERFACE_COUNT=1
 readonly PFC="on"
 readonly LRO="off"  
 readonly GRO="on"
@@ -30,8 +30,8 @@ log_error() {
 load_config() {
     local setup_name="$1"
     local setup_config="config_${setup_name}.sh"
-    echo "The config is:$setup_config"
-    # shellcheck source=config_danger35.sh
+    echo "Loading config file: $setup_config"
+    # shellcheck source=config_danger36.sh
     source "$(dirname "${BASH_SOURCE[0]}")/$setup_config"
 }
 
@@ -43,6 +43,7 @@ set_local_interfaces() {
 
     local i
     for i in $(seq "$INTERFACE_COUNT"); do
+	echo "number: $i"
 	tmp_str="ip$i"
     	ip="${!tmp_str}"
 
@@ -82,14 +83,14 @@ set_remote_interfaces() {
 
         log_info "Setting remote interface $dif on $dip.."
 
-        ssh -t "$loader1" sudo ifconfig "$dif" "$dip" netmask 255.255.255.0 mtu "$mtu"
+        ssh "$loader1" sudo ifconfig "$dif" "$dip" netmask 255.255.255.0 mtu "$mtu"
         set +euo pipefail
-        sudo ethtool -G "$dif" rx "$RING" tx "$RING" &> /dev/null
-        sudo ethtool -K "$dif" lro "$LRO" &> /dev/null
-        sudo ethtool -K "$dif" gro "$GRO" &> /dev/null
-        sudo ethtool -K "$dif" gso "$GSO" &> /dev/null
-        sudo ethtool -A "$dif" rx "$PFC" tx "$PFC" &> /dev/null
-        sudo ethtool -K "$dif" tx-nocache-copy "$TX_CACHE" &> /dev/null
+        ssh "$loader1" sudo ethtool -G "$dif" rx "$RING" tx "$RING" &> /dev/null
+        ssh "$loader1" sudo ethtool -K "$dif" lro "$LRO" &> /dev/null
+        ssh "$loader1" sudo ethtool -K "$dif" gro "$GRO" &> /dev/null
+        ssh "$loader1" sudo ethtool -K "$dif" gso "$GSO" &> /dev/null
+        ssh "$loader1" sudo ethtool -A "$dif" rx "$PFC" tx "$PFC" &> /dev/null
+        ssh "$loader1" sudo ethtool -K "$dif" tx-nocache-copy "$TX_CACHE" &> /dev/null
         set -euo pipefail
 
     done
@@ -105,6 +106,8 @@ set_kernel_settings() {
 	local NO_TURBO="/sys/devices/system/cpu/intel_pstate/no_turbo"
 
 	log_info "Setting kernel settings.."
+	
+	sudo modprobe msr
 	
 	if [ -e "$PERCPU_FRACTION" ]; then
 		sudo sh -c "echo 8 > $PERCPU_FRACTION"
@@ -141,9 +144,9 @@ set_kernel_settings() {
 	       	exit 1
 	fi
 
-	sudo modprobe msr
-	sudo wrmsr -a 0x1a0 0x4000850089
-	log_info "Turbo boost 2 disabled"
+	# Might not work on certain hosts..
+	#sudo wrmsr -a 0x1a0 0x4000850089
+	#log_info "Turbo boost 2 disabled"
 
 	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/optmem_max"
 	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/rmem_max"
