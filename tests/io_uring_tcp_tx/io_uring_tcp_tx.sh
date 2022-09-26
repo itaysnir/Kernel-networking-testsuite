@@ -55,8 +55,10 @@ init_env() {
 	$TESTS_ROOT/config/setup.sh "$SETUP_NAME"
 	
 	$TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
-	log_info "IRQ affinity set to CPU ${IRQ_CPU}"
-	# TODO: also add cpu affinity for remote host
+	log_info "Set local IRQ affinity to CPU ${IRQ_CPU}"
+
+	ssh "$loader1" sudo $TESTS_ROOT/scripts/set_irq_affinity.sh "$dif1" 
+	log_info "Set remote IRQ affinity"
 }
 
 
