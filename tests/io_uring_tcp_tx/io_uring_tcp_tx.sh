@@ -86,6 +86,7 @@ run_nc() {
 run_test() {
 	local i="$1"
 	local cmdline="sudo $IO_URING_BINARY $REMOTE_IP $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
+
 	#shellcheck disable=SC2086
 	sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$OUT_DIR-$i/perf_stat.txt" --append ${cmdline} | tee -a "$OUT_DIR-$i/io_uring.txt"
 
@@ -108,12 +109,14 @@ run_test_multiple_times() {
 			
 		run_nc
 
+		log_info "Sending packets.."
+		
 		run_test "$i" &>> "$test_output" &
 		test_pid=$!
 
 		sleep "$RAMP"	
+		
 		log_info "Collecting data.."
-	
 		$COLLECT_CPU "$if1" "$test_dir" &> /dev/null &
 		collect_cpu_pid=$!
 		
@@ -124,6 +127,8 @@ run_test_multiple_times() {
 		collect_pcm_pid=$!
 
 		wait "$test_pid"
+		log_info "Done sending packets"
+
 		wait "$collect_cpu_pid"
 		wait "$collect_pid"
 		wait "$collect_pcm_pid"

@@ -69,6 +69,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout)
 	uint64_t counter=0;	
 	while (time(NULL) < endwait){
 
+	//while(1) {
 	sqe = io_uring_get_sqe(&ring);
 	io_uring_prep_send(sqe, sockfd, iov.iov_base, iov.iov_len, 0);
 	sqe->user_data = 1;
