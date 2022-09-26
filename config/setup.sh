@@ -7,7 +7,7 @@ set -euo pipefail
 # Configurable Parameters
 readonly INTERFACE_COUNT=2
 readonly PFC="on"
-readonly LRO="off"  # TODO: check this
+readonly LRO="off"  
 readonly GRO="on"
 readonly GSO="on"
 readonly TX_CACHE="off"
@@ -67,8 +67,32 @@ set_local_interfaces() {
 
 set_remote_interfaces() {
     # It is crucial to add the loader machine within ~/.ssh/config
-#    ssh $loader1 sudo ifconfig "$dif1" "$dip1" netmask 255.255.255.0 mtu "$mtu"
-	log_info "Setting remote interface (TODO)"
+    # Moreover - execute visudo and add "<USER> ALL=(ALL) NOPASSWD: ALL"
+    local dif
+    local dip
+    local tmp_str
+
+    local i
+    for i in $(seq "$INTERFACE_COUNT"); do
+        tmp_str="dip$i"
+        dip="${!tmp_str}"
+
+        tmp_str="dif$i"
+        dif="${!tmp_str}"
+
+        log_info "Setting remote interface $dif on $dip.."
+
+        ssh -t "$loader1" sudo ifconfig "$dif" "$dip" netmask 255.255.255.0 mtu "$mtu"
+        set +euo pipefail
+        sudo ethtool -G "$dif" rx "$RING" tx "$RING" &> /dev/null
+        sudo ethtool -K "$dif" lro "$LRO" &> /dev/null
+        sudo ethtool -K "$dif" gro "$GRO" &> /dev/null
+        sudo ethtool -K "$dif" gso "$GSO" &> /dev/null
+        sudo ethtool -A "$dif" rx "$PFC" tx "$PFC" &> /dev/null
+        sudo ethtool -K "$dif" tx-nocache-copy "$TX_CACHE" &> /dev/null
+        set -euo pipefail
+
+    done
 }
 
 
@@ -116,6 +140,10 @@ set_kernel_settings() {
 	       	log_error "No msr tools found. Please issue: sudo apt install msr-tools"
 	       	exit 1
 	fi
+
+	sudo modprobe msr
+	sudo wrmsr -a 0x1a0 0x4000850089
+	log_info "Turbo boost 2 disabled"
 
 	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/optmem_max"
 	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/rmem_max"
