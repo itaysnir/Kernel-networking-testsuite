@@ -162,14 +162,16 @@ set_kernel_settings() {
 
 set_cpu_affinity() {
 	local setup_name="$1"
+	local remote_tests_root
+	remote_tests_root="/tmp/$(basename $TESTS_ROOT)"
 	# Note: this function first uploads the tests scripts to the remote host
-	 ssh "$loader1" sudo rsync -av --exclude 'Results' --exclude '.git' "$setup_name:$TESTS_ROOT" "$TESTS_ROOT"
+	ssh "$loader1" sudo rsync -av --exclude 'Results' --exclude '.git' "$setup_name:$TESTS_ROOT" "$(dirname $remote_tests_root)"
         log_info "Uploaded scripts to remote machine"
 
         $TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
         log_info "Set local IRQ affinity to CPU ${IRQ_CPU}"
 
-        ssh "$loader1" sudo $TESTS_ROOT/scripts/set_irq_affinity.sh "$dif1" &> /dev/null
+        ssh "$loader1" sudo "$remote_tests_root/scripts/set_irq_affinity.sh" "$dif1" &> /dev/null
         log_info "Set remote IRQ affinity"
 }
 
