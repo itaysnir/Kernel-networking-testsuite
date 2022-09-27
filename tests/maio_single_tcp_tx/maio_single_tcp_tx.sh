@@ -6,7 +6,7 @@ set -euo pipefail
 
 readonly GENERIC_TEST="/homes/itaysnir/Kernel-networking-testsuite/scripts/generic_test.sh"
 # shellcheck source="/homes/itaysnir/Kernel-networking-testsuite/scripts/generic_test.sh"
-#source "$GENERIC_TEST"
+source "$GENERIC_TEST"
 
 # Test Specific Config
 readonly MAIO_BINARY="$TESTS_ROOT/tests/maio_single_tcp_tx/maio_tcp_tx_client"
