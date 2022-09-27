@@ -6,7 +6,6 @@ set -euo pipefail
 
 # Configurable parameters
 readonly TEST_NAME="$(basename -s .sh "$0")"
-readonly SETUP_NAME="danger36"
 readonly TESTS_ROOT="/homes/itaysnir/Kernel-networking-testsuite"
 readonly PERF="/homes/itaysnir/linux-stable/tools/perf/perf"
 readonly REPEAT_COUNT=3
@@ -14,6 +13,7 @@ readonly REMOTE_PORT=8080
 readonly RAMP=5
 
 # No need to touch these
+readonly SETUP_NAME="$(hostname -s)"
 readonly RESULTS_DIR="$TESTS_ROOT/Results"
 readonly DATE="$(date +%y_%m_%d-%H:%M:%S)"
 readonly OUT_DIR="$RESULTS_DIR/$TEST_NAME/$DATE"
@@ -42,7 +42,17 @@ init_env() {
 			mkdir -p "$OUT_DIR-$i"
 		fi
 	done
-	
+
+	if [ ! -e "$PERF" ]; then
+                log_error "Missing perf on path: $PERF. Issue: make -C <kernel-source>/tools/ perf_install prefix=/usr/"
+                exit 1
+        fi
+
+       # if [ ! -d "$PCM"]; then
+       #        log_error "Missing perf on path:"
+       #	exit 1
+       # fi
+
 	# shellcheck source=/homes/itaysnir/Kernel-networking-testsuite/config/config_danger36.sh
 	source "$TESTS_ROOT/config/config_${SETUP_NAME}.sh"
 	$TESTS_ROOT/config/setup.sh "$SETUP_NAME"
