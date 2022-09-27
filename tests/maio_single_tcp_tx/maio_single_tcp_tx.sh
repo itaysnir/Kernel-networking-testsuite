@@ -18,7 +18,6 @@ init_maio() {
 	local huge_path="/mnt/huge"
 
 	sudo sh -c "echo 2048 > /proc/sys/vm/nr_hugepages"
-	sudo sh -c "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
 	sudo mkdir -p "$huge_path"
 	sudo mount -t hugetlbfs none "$huge_path"
 
