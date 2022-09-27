@@ -17,9 +17,15 @@ uint32_t port = 8080;
 const int K_CHUNK_SIZE = 4<<12;
 void *chunk[CHUNK_NUM];
 
-int main(void)
+int main(int argc, char *argv[])
 {
-	uint32_t dip = STR_IP(132,68,206,135);
+	if (argc < 2)
+	{
+		fprintf(stderr, "Usage: %s <TIMEOUT>\n", argv[0]);
+		exit(1);
+	}
+	
+	uint32_t dip = STR_IP(10,1,4,36);
 	int idxs[K_CLIENTS];
 
 	/* Init Mem*/
