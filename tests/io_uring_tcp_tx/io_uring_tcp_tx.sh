@@ -24,14 +24,12 @@ run_test() {
 
 #	sudo -E "$PERF" record -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -d -T -o "$out_dir/perf.data" ${cmdline} | tee -a "$out_dir/io_uring.txt"
 #	sudo -E "$PERF" script -i "$out_dir/perf.data" > "$out_dir/perf.txt"
-
-	dmesg | tail -n 30 >> "$out_dir/dmesg.txt"
 }
 
 
 main() {
 	init_env
-	run_test_multiple_times "$REPEAT_COUNT"
+	run_test_multiple_times "nc"
 	generate_plots	
 }
 

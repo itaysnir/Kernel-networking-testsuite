@@ -72,7 +72,7 @@ run_nc() {
 
 	kill_listening_process "$REMOTE_PORT"
 
-	# TODO: check if running at backround is mandatory
+	# Running at backround is mandatory
 	ssh $loader1 "nc -l -s $dip1 -p $REMOTE_PORT &" &
 	log_info "Successfully launched nc server on $dip1:$REMOTE_PORT"
 	sleep 3
@@ -94,6 +94,7 @@ run_netserver() {
 
 
 run_test_multiple_times() {
+	local remote_server="$1"  # Remote server type
 	local test_pid
 	local collect_cpu_pid
 	local collect_pid
@@ -105,8 +106,16 @@ run_test_multiple_times() {
 		test_dir="$OUT_DIR-$i"
 		test_output="$test_dir/test_raw.txt"
 		log_info "Running ${TEST_NAME}.. (iteration:$i)"
-			
-		run_nc
+	
+		if [[ "$remote_server" == "nc" ]]; then
+			run_nc
+		
+		elif [[ "$remote_server" == "netserver" ]]; then
+			run_netserver
+		else
+			log_error "Invalid remote server type: $remote_server"
+			exit 1
+		fi
 
 		log_info "Sending packets.."
 		run_test "$i" &>> "$test_output" &
