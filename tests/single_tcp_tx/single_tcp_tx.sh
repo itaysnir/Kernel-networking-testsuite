@@ -14,23 +14,17 @@ readonly TIMEOUT=30
 
 
 run_test() {
-	local i="$1"
-	local out_dir="$OUT_DIR-$i"
-	local cmdline="sudo $IO_URING_BINARY $dip1 $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
+        local i="$1"
+        local cmdline="sudo netperf -H $dip1 -p $REMOTE_PORT -t TCP_STREAM -T 1,1 -l $TIMEOUT -- -m$CHUNK_SIZE -s16M"
 
-	#shellcheck disable=SC2086
-	sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$out_dir/perf_stat.txt" --append ${cmdline} | tee -a "$OUT_DIR-$i/io_uring.txt"
-
-#	sudo -E "$PERF" record -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -d -T -o "$out_dir/perf.data" ${cmdline} | tee -a "$out_dir/io_uring.txt"
-#	sudo -E "$PERF" script -i "$out_dir/perf.data" > "$out_dir/perf.txt"
-
-	dmesg | tail -n 30 >> "$out_dir/dmesg.txt"
+        #shellcheck disable=SC2086
+        sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$OUT_DIR-$i/perf_stat.txt" --append ${cmdline} | tee -a "$OUT_DIR-$i/single_tcp.txt"
 }
 
 
 main() {
 	init_env
-	run_test_multiple_times "$REPEAT_COUNT"
+	run_test_multiple_times "netserver"
 	generate_plots	
 }
 
