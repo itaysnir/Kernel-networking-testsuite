@@ -8,7 +8,6 @@ set -euo pipefail
 readonly TESTS_ROOT="/homes/itaysnir/Kernel-networking-testsuite"
 readonly INTERFACE_COUNT=1
 readonly PFC="on"
-readonly TSO="off"
 readonly LRO="off"  
 readonly GRO="on"
 readonly GSO="on"
@@ -57,7 +56,6 @@ set_local_interfaces() {
 	sudo ifconfig "$if" "$ip" netmask 255.255.255.0 mtu "$mtu"
 	set +euo pipefail
 	sudo ethtool -G "$if" rx "$RING" tx "$RING" &> /dev/null
-	sudo ethtool -K "$if" tso "$TSO" &> /dev/null
 	sudo ethtool -K "$if" lro "$LRO" &> /dev/null
 	sudo ethtool -K "$if" gro "$GRO" &> /dev/null
 	sudo ethtool -K "$if" gso "$GSO" &> /dev/null
