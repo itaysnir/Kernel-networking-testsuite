@@ -12,7 +12,7 @@ readonly LRO="off"
 readonly GRO="on"
 readonly GSO="on"
 readonly TX_CACHE="off"
-readonly RING=256
+readonly RING=1024
 readonly SOCK_SIZE=$(( 256 * 1024 * 1024))
 readonly IRQ_CPU=0
 
@@ -167,7 +167,7 @@ set_cpu_affinity() {
         log_info "Uploaded scripts to remote machine"
 
         $TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
-        log_info "Set local IRQ affinity to CPU ${IRQ_CPU}"
+        log_info "Set local IRQ affinity to CPU $IRQ_CPU"
 
         ssh "$loader1" sudo "$remote_tests_root/scripts/set_irq_affinity.sh" "$dif1" &> /dev/null
         log_info "Set remote IRQ affinity"
