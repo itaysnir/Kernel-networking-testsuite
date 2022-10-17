@@ -13,6 +13,7 @@ An example of creating a TCP socket and sending Zero-Copy I/O
 
 const int K_CLIENTS = 1;
 uint32_t port = 8080;
+uint32_t dip = STR_IP(10,1,4,36);
 
 const int K_CHUNK_SIZE = 4<<12;
 void *chunk[CHUNK_NUM];
@@ -25,7 +26,6 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	
-	uint32_t dip = STR_IP(10,1,4,36);
 	int idxs[K_CLIENTS];
 
 	/* Init Mem*/

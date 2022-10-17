@@ -24,6 +24,7 @@ init_maio() {
 	log_info "MAIO - huge pages enabled"
 }
 
+
 run_test() {
 	local i="$1"
 	local out_dir="$OUT_DIR-$i"

@@ -21,6 +21,7 @@ readonly COLLECT_CPU="$TESTS_ROOT/data_collectors/collect_net_cpu.sh"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
 readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
 readonly MS_IN_SEC=1000
+readonly CPU_0="0x00000001"
 
 
 log_info() {
@@ -83,7 +84,7 @@ run_nc() {
 	kill_listening_process "$REMOTE_PORT"
 
 	# Running at backround is mandatory
-	ssh $loader1 "nc -l -s $dip1 -p $REMOTE_PORT &" &
+	ssh $loader1 "taskset $CPU_0 nc -l -s $dip1 -p $REMOTE_PORT &" &
 	log_info "Successfully launched nc server on $dip1:$REMOTE_PORT"
 	sleep 3
 }
@@ -97,7 +98,7 @@ run_netserver() {
 
 	kill_listening_process "$REMOTE_PORT"
 
-        ssh $loader1 "sudo netserver -p $REMOTE_PORT"
+        ssh $loader1 "taskset $CPU_0 sudo netserver -p $REMOTE_PORT"
         log_info "Launched netserver on $dip1:$REMOTE_PORT"
 	sleep 3
 }

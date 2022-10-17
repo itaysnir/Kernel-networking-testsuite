@@ -17,7 +17,7 @@ readonly TIMEOUT=30
 run_test() {
 	local i="$1"
 	local out_dir="$OUT_DIR-$i"
-	local cmdline="taskset 0x00000001 $IO_URING_BINARY $dip1 $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
+	local cmdline="taskset $CPU_0 $IO_URING_BINARY $dip1 $REMOTE_PORT $CHUNK_SIZE $TIMEOUT"
 
 	#shellcheck disable=SC2086
 	sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$out_dir/perf_stat.txt" --append ${cmdline} | tee -a "$OUT_DIR-$i/io_uring.txt"
