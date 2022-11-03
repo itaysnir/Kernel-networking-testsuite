@@ -19,13 +19,13 @@ readonly IRQ_CPU=0
 
 log_info() {
 	local msg="$1"
-	echo "[INFO]$msg"
+	echo "[INFO] $msg"
 }
 
 
 log_error() {
 	local msg="$1"
-	echo "[ERROR]$msg"
+	echo "[ERROR] $msg"
 }
 
 
