@@ -155,6 +155,7 @@ set_kernel_settings() {
 	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/rmem_default"
 	sudo sh -c "echo $SOCK_SIZE > /proc/sys/net/core/wmem_default"
 
+	log_info "Done setting procfs parameters"
 }
 
 
@@ -167,7 +168,7 @@ set_cpu_affinity() {
         log_info "Uploaded scripts to remote machine"
 
         $TESTS_ROOT/scripts/set_irq_affinity_cpulist.sh "$IRQ_CPU" "$if1" &> /dev/null
-        log_info "Set local IRQ affinity to CPU $IRQ_CPU"
+        log_info "Set local IRQ affinity to CPU $IRQ_CPU INTERFACE $if1"
 
         ssh "$loader1" sudo "$remote_tests_root/scripts/set_irq_affinity.sh" "$dif1" &> /dev/null
         log_info "Set remote IRQ affinity"
