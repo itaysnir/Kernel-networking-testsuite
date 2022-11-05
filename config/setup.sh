@@ -13,7 +13,7 @@ readonly GRO="on"
 readonly GSO="on"
 readonly TX_CACHE="off"
 readonly RING=1024
-readonly SOCK_SIZE=$(( 256 * 1024 * 1024))
+readonly SOCK_SIZE=$(( 256 * 1024 * 1024 ))
 readonly IRQ_CPU=0
 
 
