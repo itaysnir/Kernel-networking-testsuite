@@ -14,12 +14,6 @@
 
 #include "liburing.h"
 
-// Itay additions
-#define IO_URING_CHUNK (2<<20)
-#define CHUNK (16<<12)
-#define CHUNK_NUM 2000
-#define MAX CHUNK*CHUNK_NUM
-#define SA struct sockaddr
 
 void *buff;
 
@@ -31,6 +25,9 @@ static int do_send(const char* host, int port, int chunk_size, int timeout)
 		fprintf(stderr, "do_send: malloc failed\n");
 		return 1;
 	}
+	
+	memset(buff, 0x41, chunk_size);
+
 	struct sockaddr_in saddr;
 	struct iovec iov = {
 		.iov_base = buff,
@@ -52,7 +49,8 @@ static int do_send(const char* host, int port, int chunk_size, int timeout)
 	saddr.sin_port = htons(port);
 	inet_pton(AF_INET, host, &saddr.sin_addr);
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+//	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd < 0) {
 		perror("socket");
 		return 1;
@@ -101,11 +99,6 @@ err:
 	return 1;
 }
 
-static int test(const char *host, int port, int chunk_size, int timeout)
-{
-	do_send(host, port, chunk_size, timeout);
-	return 0;
-}
 
 int main(int argc, char *argv[])
 {
@@ -116,9 +109,9 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 	
-	ret = test(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+	ret = do_send(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
 	if (ret) {
-		fprintf(stderr, "test sqthread=0 failed\n");
+		fprintf(stderr, "test failed\n");
 		return ret;
 	}
 
