@@ -8,7 +8,7 @@ use StatCollect;
 
 #TODO: Add auto detect feature
 #my @ports = ('enp130s0f0', 'enp130s0f1', 'enp4s0f0', 'enp4s0f1');
-my @ports = ('eth1, eth2');
+my @ports = ('eth4');
 my @net_stats = ();
 my $cpu_stats = undef;
 
