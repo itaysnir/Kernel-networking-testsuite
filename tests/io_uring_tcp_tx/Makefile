@@ -8,8 +8,5 @@ all: $(all_targets)
 clean:
 	rm -f $(all_targets)
 
-liburing:
-	+$(MAKE) -C ./liburing
-
 io_uring_tcp_tx:
 	$(CC) io_uring_tcp_tx.c -o ./io_uring_tcp_tx  ${CCFLAGS}
