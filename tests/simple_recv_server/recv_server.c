@@ -15,15 +15,17 @@ void func(int connfd)
 {
     char buff[MAX];
     int n;
+    bzero(buff, MAX);
+
     // infinite loop for chat
     for (;;) {
-        bzero(buff, MAX);
+  //      bzero(buff, MAX);
    
         // read the message from client and copy it in buffer
         n = recv(connfd, buff, sizeof(buff), 0);
         // print buffer which contains the client contents
-        printf("%d bytes From client: %s\n", n, buff);
-        bzero(buff, MAX);
+//        printf("%d bytes From client: %s\n", n, buff);
+//        bzero(buff, MAX);
 //        n = 0;
 	// copy server message in the buffer
 //        while ((buff[n++] = getchar()) != '\n')
