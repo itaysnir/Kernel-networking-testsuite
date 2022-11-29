@@ -92,7 +92,7 @@ run_nc() {
 
 run_netserver() {
         if [ -z "$(ssh $loader1 command -v netserver)" ]; then
-                log_error "No nc on the remote machine. Try: sudo apt install nc"
+                log_error "No netserver on the remote machine. Try: sudo apt install nc"
                 exit 1
         fi
 
@@ -103,9 +103,42 @@ run_netserver() {
 	sleep 3
 }
 
+__run_simple_recv_inner(){
+	local port="$1"
+	local affinity="$2"
+
+	local server_path="/tmp/Kernel-networking-testsuite/tests/simple_recv_server/recv_server"
+	# TODO: add assertion check that the remote recv server do exist
+
+	kill_listening_process "$port"
+	sleep 1
+
+	ssh $loader1 "taskset $affinity $server_path $port &" &
+	log_info "Launched simple recv server on $dip1:$port"
+}
+
+
+
+run_simple_recv(){
+	local servers_count="$1"
+	local port="$REMOTE_PORT"
+	local affinity=0x1
+	
+	kill_listening_process "recv_server"
+	sleep 1
+
+	for i in $(seq 0 $((servers_count - 1)) ); do
+		__run_simple_recv_inner "$port" "$affinity"	
+		port=$((port + 1))	
+		affinity=$((affinity * 2))
+	done	
+
+	sleep 3
+}
 
 run_test_multiple_times() {
 	local remote_server="$1"  # Remote server type
+	local servers_count="$2"
 	local test_pid
 	local collect_cpu_pid
 	local collect_pid
@@ -123,6 +156,10 @@ run_test_multiple_times() {
 		
 		elif [[ "$remote_server" == "netserver" ]]; then
 			run_netserver
+
+		elif [[ "$remote_server" == "simple_recv" ]];then
+			run_simple_recv "$servers_count"
+
 		else
 			log_error "Invalid remote server type: $remote_server"
 			exit 1

@@ -65,19 +65,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 {
 	struct io_uring_cqe *cqes[MAX_CQES];
 
-	buff = malloc(chunk_size);
-	if (!buff) {
-		fprintf(stderr, "do_send: malloc failed\n");
-		return 1;
-	}
-	
-	memset(buff, 0x41, chunk_size);
-
 	struct sockaddr_in saddr;
-//	struct iovec iov = {
-//		.iov_base = buff,
-//		.iov_len = chunk_size,
-//	};
 	struct io_uring ring;
 //	struct io_uring_cqe *cqe;
 	struct io_uring_sqe *sqe;
@@ -134,8 +122,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 			return 1;
 		}
 
-		// io_uring_prep_send(sqe, sockfd, iov.iov_base, iov.iov_len, 0);
-		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, CHUNK, 0);
+		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
 
 		sqe->user_data = 1 + m;
 		temp_link = temp_link->next;
@@ -162,8 +149,6 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	}
 
 */
-	// TODO: check this
-	//unsigned got;
 	// CHECK_BATCH(&ring, got, cqes, batch, batch);
 
 	int retval;	
@@ -171,12 +156,13 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	while (completed_requests != MAX_CQES)
 	{
 		retval = io_uring_wait_cqe_nr(&ring, cqes, batch);
+		if (retval < 0)
+		{
+			fprintf(stderr, "wait_cqe_nr failed\n");
+			goto err;
+		}
 		completed_requests += batch;	
-		printf("retval:%d\n", retval);
 	}
-	
-
-	// io_uring_cq_advance(&ring, batch);
 
 	}
 
@@ -188,16 +174,8 @@ err:
 }
 
 
-int main(int argc, char *argv[])
+int allocate_send_buffers(int chunk_size)
 {
-	int ret;
-
-	if (argc != 6) {
-		fprintf(stderr, "Usage: %s <REMOTE_IP> <REMOTE_PORT> <CHUNK_SIZE> <TIMEOUT> <BATCH_SIZE>\n", argv[0]);
-		return 0;
-	}
-
-	// Set send buffers
 	for (int i = 1 ; i <= MAX_CQES ; i++)
         {
                 temp_link = (struct ring_elt *)malloc(sizeof(struct ring_elt));
@@ -206,13 +184,13 @@ int main(int argc, char *argv[])
                         first_link = temp_link;
                 }
 
-                temp_link->buffer_base = (char *)malloc(CHUNK + alignment);
-                memset(temp_link->buffer_base, 0, CHUNK + alignment);
+                temp_link->buffer_base = (char *)malloc(chunk_size + alignment);
+                memset(temp_link->buffer_base, 0, chunk_size + alignment);
 
                 temp_link->buffer_ptr = (char *)(( (long)temp_link->buffer_base + (long)alignment -1 ) & ~((long)alignment - 1));
 
                 char *bufptr = temp_link->buffer_ptr;
-                memset(bufptr, 'A', CHUNK);
+                memset(bufptr, 'A', chunk_size);
 
                 temp_link->next = prev_link;
                 prev_link = temp_link;
@@ -223,6 +201,20 @@ int main(int argc, char *argv[])
                 first_link->next = temp_link;
         }
 	temp_link = first_link;
+
+	return 0;
+}
+
+int main(int argc, char *argv[])
+{
+	int ret;
+
+	if (argc != 6) {
+		fprintf(stderr, "Usage: %s <REMOTE_IP> <REMOTE_PORT> <CHUNK_SIZE> <TIMEOUT> <BATCH_SIZE>\n", argv[0]);
+		return 0;
+	}
+
+	allocate_send_buffers(atoi(argv[3]));
 	
 	ret = do_send(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
 	if (ret) {
