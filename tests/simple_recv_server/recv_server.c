@@ -23,6 +23,14 @@ void func(int connfd)
    
         // read the message from client and copy it in buffer
         n = recv(connfd, buff, sizeof(buff), 0);
+
+	if (n == 0)
+	{
+		printf("exit..\n");
+		exit(1);
+	}
+	
+
         // print buffer which contains the client contents
 //        printf("%d bytes From client: %s\n", n, buff);
 //        bzero(buff, MAX);
@@ -43,11 +51,17 @@ void func(int connfd)
 }
    
 // Driver function
-int main()
+int main(int argc, char **argv)
 {
     int sockfd, connfd, len;
     struct sockaddr_in servaddr, cli;
-   
+
+    if (argc != 2) {
+            fprintf(stderr,"usage: %s <LISTEN_PORT>\n", argv[0]);
+            exit(1);
+        } 
+
+    int server_port = atoi(argv[1]);
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -62,7 +76,7 @@ int main()
     servaddr.sin_family = AF_INET;
 //    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     inet_aton("10.1.4.35", (struct in_addr*)&servaddr.sin_addr.s_addr);
-    servaddr.sin_port = htons(PORT);
+    servaddr.sin_port = htons(server_port);
    
     // Binding newly created socket to given IP and verification
     if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {

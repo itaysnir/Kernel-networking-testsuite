@@ -49,7 +49,9 @@ struct ring_elt *temp_link = NULL;
 struct ring_elt *first_link = NULL;
 int alignment = 16;
 
+#define MAX_CQES 2048
 #define CHUNK 16384
+#define SOCK_SIZE 16777216
 #define CHECK_BATCH(ring, got, cqes, count, expected) do {\
 		got = io_uring_peek_batch_cqe((ring), cqes, count);\
 		if (got != expected) {\
@@ -61,7 +63,7 @@ int alignment = 16;
 
 static int do_send(const char* host, int port, int chunk_size, int timeout, int batch)
 {
-	struct io_uring_cqe *cqes[512];
+	struct io_uring_cqe *cqes[MAX_CQES];
 
 	buff = malloc(chunk_size);
 	if (!buff) {
@@ -81,7 +83,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	struct io_uring_sqe *sqe;
 	int sockfd, ret;
 
-	ret = io_uring_queue_init(batch * 2, &ring, 0);
+	ret = io_uring_queue_init(MAX_CQES * 2, &ring, 0);
 	if (ret) {
 		fprintf(stderr, "queue init failed: %d\n", ret);
 		return 1;
@@ -93,13 +95,12 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	inet_pton(AF_INET, host, &saddr.sin_addr);
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	//sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd < 0) {
 		perror("socket");
 		return 1;
 	}
 
-	size_t sk_buf_size = 16777216;
+	size_t sk_buf_size = SOCK_SIZE;
         int one = 1;
         setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (void *)&sk_buf_size, sizeof(one));
         setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (void *)&sk_buf_size, sizeof(one));
@@ -121,11 +122,10 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	}
 
 	time_t endwait = time(NULL) + timeout;
-	uint64_t counter=0;	
 	
 	while (time(NULL) < endwait){
 
-	for (int m = 0 ; m < batch ; m++)
+	for (int m = 0 ; m < MAX_CQES ; m++)
 	{
 		sqe = io_uring_get_sqe(&ring);
 		if (!sqe)
@@ -162,16 +162,24 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	}
 
 */
-	unsigned got;
+	// TODO: check this
+	//unsigned got;
+	// CHECK_BATCH(&ring, got, cqes, batch, batch);
+
+	int retval;	
+	uint32_t completed_requests = 0;
+	while (completed_requests != MAX_CQES)
+	{
+		retval = io_uring_wait_cqe_nr(&ring, cqes, batch);
+		completed_requests += batch;	
+		printf("retval:%d\n", retval);
+	}
 	
-	CHECK_BATCH(&ring, got, cqes, batch, batch);
 
 	// io_uring_cq_advance(&ring, batch);
-	counter++;
 
 	}
 
-	printf("Packets sent:%lu\n", counter);
 	close(sockfd);
 	return 0;
 err:
@@ -190,7 +198,7 @@ int main(int argc, char *argv[])
 	}
 
 	// Set send buffers
-	for (int i = 1 ; i <= atoi(argv[5]); i++)
+	for (int i = 1 ; i <= MAX_CQES ; i++)
         {
                 temp_link = (struct ring_elt *)malloc(sizeof(struct ring_elt));
                 temp_link->completion_ptr = NULL;
