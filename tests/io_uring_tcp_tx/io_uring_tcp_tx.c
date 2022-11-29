@@ -49,7 +49,7 @@ struct ring_elt *temp_link = NULL;
 struct ring_elt *first_link = NULL;
 int alignment = 16;
 
-#define MAX_CQES 2048
+#define MAX_CQES 16384 
 #define CHUNK 16384
 #define SOCK_SIZE 16777216
 #define CHECK_BATCH(ring, got, cqes, count, expected) do {\
