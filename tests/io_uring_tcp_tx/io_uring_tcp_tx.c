@@ -47,7 +47,7 @@ void *buff;
 struct ring_elt *prev_link = NULL;
 struct ring_elt *temp_link = NULL;
 struct ring_elt *first_link = NULL;
-int alignment = 16;
+int alignment = 256;
 
 #define MAX_CQES 16384 
 #define CHUNK 16384
@@ -122,9 +122,9 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 			return 1;
 		}
 
-		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
-
 		sqe->user_data = 1 + m;
+		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
+		
 		temp_link = temp_link->next;
 	}
 
@@ -161,7 +161,8 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 			fprintf(stderr, "wait_cqe_nr failed\n");
 			goto err;
 		}
-		completed_requests += batch;	
+		completed_requests += batch;
+		io_uring_cq_advance(&ring, batch);	
 	}
 
 	}
