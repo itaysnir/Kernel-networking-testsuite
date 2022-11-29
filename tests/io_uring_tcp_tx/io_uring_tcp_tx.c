@@ -15,9 +15,41 @@
 #include "liburing.h"
 
 
+
+struct ring_elt {
+  struct ring_elt *next;  /* next element in the ring */
+  char *buffer_base;      /* in case we have to free it at somepoint */
+  char *buffer_ptr;       /* the aligned and offset pointer */
+  void *completion_ptr;   /* a pointer to information for async completion */
+  /* these are for sendfile calls and at some point we should consider
+     using a union but it isn't really all that much extra space */
+  struct iovec *hdtrl;            /* a pointer to a header/trailer
+                                     that we do not initially use and
+                                     so should be set to NULL when the
+                                     ring is setup. */
+  off_t offset;                   /* the offset from the beginning of
+                                     the file for this send */
+  size_t length;                  /* the number of bytes to send -
+                                     this is redundant with the
+                                     send_size variable but I decided
+                                     to include it anyway */
+  int fildes;                     /* the file descriptor of the source
+                                     file */
+  int flags;                      /* the flags to pass to sendfile() -
+                                     presently unused and should be
+                                     set to zero when the ring is
+                                     setup. */
+};
+
+
+
 void *buff;
+struct ring_elt *prev_link = NULL;
+struct ring_elt *temp_link = NULL;
+struct ring_elt *first_link = NULL;
+int alignment = 16;
 
-
+#define CHUNK 16384
 #define CHECK_BATCH(ring, got, cqes, count, expected) do {\
 		got = io_uring_peek_batch_cqe((ring), cqes, count);\
 		if (got != expected) {\
@@ -40,12 +72,12 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	memset(buff, 0x41, chunk_size);
 
 	struct sockaddr_in saddr;
-	struct iovec iov = {
-		.iov_base = buff,
-		.iov_len = chunk_size,
-	};
+//	struct iovec iov = {
+//		.iov_base = buff,
+//		.iov_len = chunk_size,
+//	};
 	struct io_uring ring;
-	struct io_uring_cqe *cqe;
+//	struct io_uring_cqe *cqe;
 	struct io_uring_sqe *sqe;
 	int sockfd, ret;
 
@@ -60,12 +92,27 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	saddr.sin_port = htons(port);
 	inet_pton(AF_INET, host, &saddr.sin_addr);
 
-//	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	//sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd < 0) {
 		perror("socket");
 		return 1;
 	}
+
+	size_t sk_buf_size = 16777216;
+        int one = 1;
+        setsockopt(sockfd, SOL_SOCKET, SO_SNDBUF, (void *)&sk_buf_size, sizeof(one));
+        setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, (void *)&sk_buf_size, sizeof(one));
+        setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *)&one, sizeof(one));
+        setsockopt(sockfd, SOL_IP, IP_RECVERR, (void *)&one, sizeof(one));
+
+	struct sockaddr_in local_addr;
+        memset(&local_addr, 0, sizeof(struct sockaddr_in));
+        local_addr.sin_family = AF_INET;
+        local_addr.sin_port = 0;
+        inet_aton("0.0.0.0", (struct in_addr*)&local_addr.sin_addr.s_addr);
+        bind(sockfd, (struct sockaddr*)&local_addr, sizeof(local_addr));
+
 
 	ret = connect(sockfd, (struct sockaddr *)&saddr, sizeof(saddr));
 	if (ret < 0) {
@@ -87,8 +134,11 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 			return 1;
 		}
 
-		io_uring_prep_send(sqe, sockfd, iov.iov_base, iov.iov_len, 0);
+		// io_uring_prep_send(sqe, sockfd, iov.iov_base, iov.iov_len, 0);
+		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, CHUNK, 0);
+
 		sqe->user_data = 1 + m;
+		temp_link = temp_link->next;
 	}
 
 
@@ -113,6 +163,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 
 */
 	unsigned got;
+	
 	CHECK_BATCH(&ring, got, cqes, batch, batch);
 
 	// io_uring_cq_advance(&ring, batch);
@@ -137,6 +188,33 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Usage: %s <REMOTE_IP> <REMOTE_PORT> <CHUNK_SIZE> <TIMEOUT> <BATCH_SIZE>\n", argv[0]);
 		return 0;
 	}
+
+	// Set send buffers
+	for (int i = 1 ; i <= atoi(argv[5]); i++)
+        {
+                temp_link = (struct ring_elt *)malloc(sizeof(struct ring_elt));
+                temp_link->completion_ptr = NULL;
+                if (i == 1){
+                        first_link = temp_link;
+                }
+
+                temp_link->buffer_base = (char *)malloc(CHUNK + alignment);
+                memset(temp_link->buffer_base, 0, CHUNK + alignment);
+
+                temp_link->buffer_ptr = (char *)(( (long)temp_link->buffer_base + (long)alignment -1 ) & ~((long)alignment - 1));
+
+                char *bufptr = temp_link->buffer_ptr;
+                memset(bufptr, 'A', CHUNK);
+
+                temp_link->next = prev_link;
+                prev_link = temp_link;
+        }
+        if (first_link)
+        {
+                // make this a circular list
+                first_link->next = temp_link;
+        }
+	temp_link = first_link;
 	
 	ret = do_send(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
 	if (ret) {
