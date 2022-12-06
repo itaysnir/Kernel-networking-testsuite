@@ -102,6 +102,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	inet_pton(AF_INET, host, &saddr.sin_addr);
 	
 //	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {

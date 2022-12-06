@@ -10,9 +10,9 @@ source "$GENERIC_TEST"
 
 # Test Specific Config
 readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_zc_tx/io_uring_zc_tx"
-readonly CHUNK_SIZE=65536
-readonly TIMEOUT=40
-readonly BATCH=64
+readonly CHUNK_SIZE=16384
+readonly TIMEOUT=60
+readonly BATCH=1
 
 
 run_test() {
@@ -24,7 +24,6 @@ run_test() {
 	taskset 1 "$IO_URING_BINARY" $dip1 8081 $CHUNK_SIZE $TIMEOUT $BATCH &
 	taskset 1 "$IO_URING_BINARY" $dip1 8082 $CHUNK_SIZE $TIMEOUT $BATCH &
 	taskset 1 "$IO_URING_BINARY" $dip1 8083 $CHUNK_SIZE $TIMEOUT $BATCH &
-	taskset 1 "$IO_URING_BINARY" $dip1 8084 $CHUNK_SIZE $TIMEOUT $BATCH &
 
 
 	#shellcheck disable=SC2086
@@ -37,7 +36,7 @@ run_test() {
 
 main() {
 	init_env
-	run_test_multiple_times "simple_recv" 4
+	run_test_multiple_times "simple_recv" 5
 #	generate_plots	
 }
 
