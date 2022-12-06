@@ -15,8 +15,6 @@
 #include "liburing.h"
 
 
-static bool cfg_fixed_files = 1;
-
 struct ring_elt {
   struct ring_elt *next;  /* next element in the ring */
   char *buffer_base;      /* in case we have to free it at somepoint */
@@ -43,13 +41,6 @@ struct ring_elt {
 };
 
 
-
-void *buff;
-struct ring_elt *prev_link = NULL;
-struct ring_elt *temp_link = NULL;
-struct ring_elt *first_link = NULL;
-int alignment = 256;
-
 #define MAX_CQES 256 
 #define SOCK_SIZE 2097152 
 #define CHECK_BATCH(ring, got, cqes, count, expected) do {\
@@ -61,6 +52,33 @@ int alignment = 256;
 } while(0)
 
 
+static inline struct io_uring_cqe *wait_cqe_fast(struct io_uring *ring)
+{
+	struct io_uring_cqe *cqe;
+	unsigned head;
+	int ret;
+
+	io_uring_for_each_cqe(ring, head, cqe)
+		return cqe;
+
+	ret = io_uring_wait_cqe(ring, &cqe);
+	if (ret){
+		perror("wait_cqe_fast");
+		exit(1);	
+	}
+	return cqe;
+}
+
+
+static bool cfg_fixed_files = 1;
+
+void *buff;
+struct ring_elt *prev_link = NULL;
+struct ring_elt *temp_link = NULL;
+struct ring_elt *first_link = NULL;
+int alignment = 256;
+
+
 static int do_send(const char* host, int port, int chunk_size, int timeout, int batch)
 {
 	struct io_uring_cqe *cqes[MAX_CQES];
@@ -70,6 +88,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 //	struct io_uring_cqe *cqe;
 	struct io_uring_sqe *sqe;
 	int sockfd, ret;
+
 
 	ret = io_uring_queue_init(MAX_CQES * 2, &ring, IORING_SETUP_COOP_TASKRUN);
 	if (ret) {
@@ -162,8 +181,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		goto err;
 	}
 
-	// Currently, only examines the first cqe of the batch
-/*
+/* OLD
 	ret = io_uring_wait_cqe_nr(&ring, &cqe, batch);
 	if (cqe->res == -EINVAL) {
 		fprintf(stdout, "send not supported, skipping\n");
@@ -175,9 +193,10 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		goto err;
 	}
 
+	CHECK_BATCH(&ring, got, cqes, batch, batch);
 */
-	// CHECK_BATCH(&ring, got, cqes, batch, batch);
 
+// original itay's batch waiting	
 	int retval;	
 	uint32_t completed_requests = 0;
 	while (completed_requests != MAX_CQES)
@@ -191,6 +210,28 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		completed_requests += batch;
 		io_uring_cq_advance(&ring, batch);	
 	}
+
+/* from benchmarks
+	struct io_uring_cqe *cqe;
+	uint64_t packets = 0;
+	uint64_t bytes = 0;
+
+	for (int i = 0; i < MAX_CQES ; i++)
+	{
+		cqe = wait_cqe_fast(&ring);
+		if (cqe->res > 0)
+		{
+			packets++;
+			bytes += cqe->res;
+		}
+		else
+		{
+			perror("bad cqe!");
+		}
+
+		io_uring_cqe_seen(&ring, cqe);
+	}
+*/
 
 	}
 

@@ -11,7 +11,7 @@ source "$GENERIC_TEST"
 # Test Specific Config
 readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/io_uring_tcp_tx"
 readonly CHUNK_SIZE=16384
-readonly TIMEOUT=40
+readonly TIMEOUT=60
 readonly BATCH=64
 
 
