@@ -15,6 +15,7 @@
 #include "liburing.h"
 
 
+static bool cfg_fixed_files = 1;
 
 struct ring_elt {
   struct ring_elt *next;  /* next element in the ring */
@@ -110,6 +111,26 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		return 1;
 	}
 
+
+	if (cfg_fixed_files)
+	{
+		// New io_uring_register* , improves performance
+		if (io_uring_register_files(&ring, &sockfd, 1) < 0)
+		{
+			perror("io_uring: files registration");
+			return 1;
+		}
+	}	
+
+	if (io_uring_register_ring_fd(&ring) < 0)
+	{
+		perror("io_uring: ring registration");
+		return 1;
+	}	
+
+
+
+
 	time_t endwait = time(NULL) + timeout;
 	
 	while (time(NULL) < endwait){
@@ -123,15 +144,20 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 			return 1;
 		}
 
-		sqe->user_data = 1 + m;
 		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
 		
+		sqe->user_data = 1 + m;
+		if (cfg_fixed_files)
+		{
+			sqe->fd = 0;
+			sqe->flags |= IOSQE_FIXED_FILE;
+		}
 		temp_link = temp_link->next;
 	}
 
 
 	ret = io_uring_submit(&ring);
-	if (ret < batch ) {
+	if (ret != MAX_CQES) {
 		fprintf(stderr, "submit failed, only submitted: %d\n", ret);
 		goto err;
 	}
@@ -168,6 +194,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 
 	}
 
+	io_uring_queue_exit(&ring);
 	close(sockfd);
 	return 0;
 err:
