@@ -49,9 +49,8 @@ struct ring_elt *temp_link = NULL;
 struct ring_elt *first_link = NULL;
 int alignment = 256;
 
-#define MAX_CQES 1024 
-#define CHUNK 16384
-#define SOCK_SIZE 16777216
+#define MAX_CQES 256 
+#define SOCK_SIZE 2097152 
 #define CHECK_BATCH(ring, got, cqes, count, expected) do {\
 		got = io_uring_peek_batch_cqe((ring), cqes, count);\
 		if (got != expected) {\
@@ -71,7 +70,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	struct io_uring_sqe *sqe;
 	int sockfd, ret;
 
-	ret = io_uring_queue_init(MAX_CQES * 2, &ring, 0);
+	ret = io_uring_queue_init(MAX_CQES * 2, &ring, IORING_SETUP_COOP_TASKRUN);
 	if (ret) {
 		fprintf(stderr, "queue init failed: %d\n", ret);
 		return 1;
@@ -82,9 +81,9 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	saddr.sin_port = htons(port);
 	inet_pton(AF_INET, host, &saddr.sin_addr);
 	
-	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+//	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-//	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		perror("socket");
 		return 1;
