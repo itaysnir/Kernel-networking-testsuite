@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "liburing.h"
 
@@ -61,13 +62,22 @@ int alignment = 256;
 } while(0)
 
 
+static bool check_cq_empty(struct io_uring *ring)
+{
+        struct io_uring_cqe *cqe = NULL;
+        int ret;
+
+        ret = io_uring_peek_cqe(ring, &cqe); /* nothing should be there */
+        return ret == -EAGAIN;
+}
+
 static int do_send(const char* host, int port, int chunk_size, int timeout, int batch)
 {
-	struct io_uring_cqe *cqes[MAX_CQES];
+//	struct io_uring_cqe *cqes[MAX_CQES];
 
 	struct sockaddr_in saddr;
 	struct io_uring ring;
-//	struct io_uring_cqe *cqe;
+	struct io_uring_cqe *cqe;
 	struct io_uring_sqe *sqe;
 	int sockfd, ret;
 
@@ -82,9 +92,8 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	saddr.sin_port = htons(port);
 	inet_pton(AF_INET, host, &saddr.sin_addr);
 	
-	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
-//	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		perror("socket");
 		return 1;
@@ -115,8 +124,8 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	
 	while (time(NULL) < endwait){
 
-	for (int m = 0 ; m < MAX_CQES ; m++)
-	{
+//	for (int m = 0 ; m < MAX_CQES ; m++)
+//	{
 		sqe = io_uring_get_sqe(&ring);
 		if (!sqe)
 		{
@@ -124,35 +133,55 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 			return 1;
 		}
 
-		sqe->user_data = 1 + m;
-		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
-		
+		sqe->user_data = 1 + 0;
+		// io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
+		io_uring_prep_send_zc(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0, 0);	
 		temp_link = temp_link->next;
-	}
+//	}
 
 
 	ret = io_uring_submit(&ring);
-	if (ret < batch ) {
+	printf("I've submitted: %d ZC send requests\n", ret);
+
+	if (ret != 1) {
 		fprintf(stderr, "submit failed, only submitted: %d\n", ret);
 		goto err;
 	}
 
-	// Currently, only examines the first cqe of the batch
-/*
-	ret = io_uring_wait_cqe_nr(&ring, &cqe, batch);
+	ret = io_uring_wait_cqe(&ring, &cqe);
+	assert(!ret);
+	assert(cqe->user_data == 1);
+	
+	if (ret == -EINVAL) {
+		fprintf(stdout, "wierd return value, exit\n");
+		exit(1);
+	}
+
 	if (cqe->res == -EINVAL) {
-		fprintf(stdout, "send not supported, skipping\n");
+		fprintf(stdout, "send not supported at this kernel version, skipping\n");
 		close(sockfd);
 		return 0;
 	}
-	if (cqe->res != iov.iov_len) {
-		fprintf(stderr, "failed cqe: %d\n", cqe->res);
+
+	if (cqe->res != chunk_size) {
+		fprintf(stderr, "failed cqe size: %d\n", cqe->res);
 		goto err;
 	}
 
-*/
+	assert(cqe->flags & IORING_CQE_F_MORE);
+	io_uring_cqe_seen(&ring, cqe);
+
+	// yes, another answer
+	ret = io_uring_wait_cqe(&ring, &cqe);
+        assert(!ret);
+        assert(cqe->user_data == 1);
+        assert(cqe->flags & IORING_CQE_F_NOTIF);
+        assert(!(cqe->flags & IORING_CQE_F_MORE));
+        io_uring_cqe_seen(&ring, cqe);
+        assert(check_cq_empty(&ring));	
 	// CHECK_BATCH(&ring, got, cqes, batch, batch);
 
+	/* ORIGINAL CODE
 	int retval;	
 	uint32_t completed_requests = 0;
 	while (completed_requests != MAX_CQES)
@@ -166,6 +195,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		completed_requests += batch;
 		io_uring_cq_advance(&ring, batch);	
 	}
+	*/
 
 	}
 
