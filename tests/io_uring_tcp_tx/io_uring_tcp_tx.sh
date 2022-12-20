@@ -12,13 +12,15 @@ source "$GENERIC_TEST"
 readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/io_uring_tcp_tx"
 readonly CHUNK_SIZE=16384
 readonly TIMEOUT=30
-readonly BATCH=8
+readonly BATCH=64
 
 
 run_test() {
 	local i="$1"
 	local out_dir="$OUT_DIR-$i"
 	local cmdline="taskset $CPU_0 $IO_URING_BINARY $dip1 $REMOTE_PORT $CHUNK_SIZE $TIMEOUT $BATCH"
+
+	echo "Running: taskset 1 "$IO_URING_BINARY" $dip1 8080 $CHUNK_SIZE $TIMEOUT $BATCH &"
 	taskset 1 "$IO_URING_BINARY" $dip1 8080 $CHUNK_SIZE $TIMEOUT $BATCH &
 	taskset 1 "$IO_URING_BINARY" $dip1 8081 $CHUNK_SIZE $TIMEOUT $BATCH &
 	taskset 1 "$IO_URING_BINARY" $dip1 8082 $CHUNK_SIZE $TIMEOUT $BATCH &

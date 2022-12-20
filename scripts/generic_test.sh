@@ -10,7 +10,7 @@ readonly TESTS_ROOT="/homes/itaysnir/Kernel-networking-testsuite"
 readonly PERF="/homes/itaysnir/linux-stable/tools/perf/perf"
 readonly REPEAT_COUNT=3
 readonly REMOTE_PORT=8080
-readonly RAMP=5
+readonly RAMP=15
 
 # No need to touch these
 readonly SETUP_NAME="$(hostname -s)"
@@ -20,7 +20,7 @@ readonly OUT_DIR="$RESULTS_DIR/$TEST_NAME/$DATE"
 readonly COLLECT_CPU="$TESTS_ROOT/data_collectors/collect_net_cpu.sh"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
 readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
-readonly WATCH_SCRIPT="$TESTS_ROOT/data_collectors/watch.pl"
+readonly WATCH_SCRIPT="$TESTS_ROOT/data_collectors/itay_watch.sh"
 readonly MS_IN_SEC=1000
 readonly CPU_0="0x00000001"
 
@@ -209,7 +209,7 @@ run_test_multiple_times() {
 		collect_pcm_pid=$!
 
 		cd "$TESTS_ROOT/data_collectors"
-		$WATCH_SCRIPT &>> "$test_dir/result_watch.txt" &
+		$WATCH_SCRIPT 5 &>> "$test_dir/result_watch.txt" &
 		watch_pid=$!
 		cd -
 
