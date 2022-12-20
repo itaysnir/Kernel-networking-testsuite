@@ -15,7 +15,7 @@ figure, axis = plt.subplots(3, 1, sharex=True)
 axis[0].scatter(
         batch, 
         throughput1, 
-        label="16KB", 
+        label="Chunk Size = 16KB", 
         color="green",
         marker="+",
         s=30 
@@ -26,7 +26,7 @@ axis[0].set_title("16KB")
 axis[1].scatter(
         batch, 
         throughput2, 
-        label="64B", 
+        label="Chunk Size = 64B", 
         color="red",
         marker="*",
         s=30 
@@ -37,7 +37,7 @@ axis[1].set_title("64B")
 axis[2].scatter(
         batch, 
         throughput3, 
-        label="1B", 
+        label="Chunk Size = 1B", 
         color="blue",
         marker="D",
         s=30 
@@ -48,10 +48,10 @@ axis[2].set_title("1B")
 #plt.xlabel('batch[#submit-requests]')
 #plt.ylabel('throughput[Gbps]')
 
-figure.text(0.5, 0.04, 'batch[#submit-requests]', ha='center')
-figure.text(0.04, 0.5,'throughput[Gbps]', va='center', rotation='vertical')
+figure.text(0.5, 0.04, 'Batch [#submit-requests]', ha='center')
+figure.text(0.04, 0.5,'Throughput [Gbps]', va='center', rotation='vertical')
 
-plt.suptitle('IO Uring - TCP TX - throughput (batch)')
+plt.suptitle('IO Uring - TCP TX - Throughput (Batch)')
 
 plt.savefig('io_uring_tcp_tx_batch.pdf', format='pdf')
 

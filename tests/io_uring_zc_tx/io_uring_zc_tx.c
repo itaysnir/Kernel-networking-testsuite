@@ -64,17 +64,6 @@ struct ring_elt *temp_link = NULL;
 struct ring_elt *first_link = NULL;
 int alignment = 256;
 
-/* OLD
-static bool check_cq_empty(struct io_uring *ring)
-{
-        struct io_uring_cqe *cqe = NULL;
-        int ret;
-
-        ret = io_uring_peek_cqe(ring, &cqe);
-        return ret == -EAGAIN;
-}
-*/
-
 
 static inline struct io_uring_cqe *wait_cqe_fast(struct io_uring *ring)
 {
@@ -96,7 +85,6 @@ static inline struct io_uring_cqe *wait_cqe_fast(struct io_uring *ring)
 static int do_send(const char* host, int port, int chunk_size, int timeout, int batch)
 {
 //	struct io_uring_cqe *cqes[MAX_CQES];
-//	struct iovec iov;
 	struct sockaddr_in saddr;
 	struct io_uring ring;
 	struct io_uring_cqe *cqe;
@@ -109,6 +97,14 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		return 1;
 	}
 
+	/*
+	struct io_uring_notification_slot b[1] = {{.tag = ZC_TAG}};
+	if (io_uring_register_notifications(&ring, 1, b) != 0)
+	{
+		fprintf(stderr, "io_uring: notification register failed\n");
+		return 1;
+	}
+	*/
 
 	memset(&saddr, 0, sizeof(saddr));
 	saddr.sin_family = AF_INET;
@@ -146,7 +142,6 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 
 	if (cfg_fixed_files)
 	{
-		// New io_uring_register* , improves performance
 		if (io_uring_register_files(&ring, &sockfd, 1) < 0)
 		{
 			perror("io_uring: files registration");
@@ -154,10 +149,11 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		}
 	}	
 
-	//iov.iov_base = payload;
-	//iov.iov_len = chunk_size;
-
 	/*
+	struct iovec iov;
+	iov.iov_base = payload;
+	iov.iov_len = chunk_size;
+	
 	ret = io_uring_register_buffers(&ring, &iov, 1);
 	if (ret != 0)
 	{
@@ -177,7 +173,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	
 	while (time(NULL) < endwait){
 	
-	for (int m = 0 ; m < NR_REQS ; m++)
+	for (int m = 0 ; m < batch; m++)
 	{
 		sqe = io_uring_get_sqe(&ring);
 		if (!sqe)
@@ -185,49 +181,55 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 			perror("get_sqe");
 			return 1;
 		}
-
-		//sqe->user_data = 1 + m;
+		
 		sqe->user_data = 1;
 		io_uring_prep_send_zc(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0, 0);	
 		temp_link = temp_link->next;
-
-		/*
+	/*	
 		sqe->user_data = 1;
 		io_uring_prep_send_zc(sqe, sockfd, payload, chunk_size, 0, 0);
-
+	*/	
 		if (cfg_fixed_files)
 		{
 			sqe->fd = 0;
-			sqe->flags = IOSQE_FIXED_FILE;
-		}
-		*/
+			sqe->flags |= IOSQE_FIXED_FILE;
+		}		
 	}
 
 
 	ret = io_uring_submit(&ring);
-	if (ret != NR_REQS) {
+	if (ret != batch) {
 		fprintf(stderr, "submit failed, only submitted: %d\n", ret);
 		goto err;
 	}
 
-	for (int i = 0; i < NR_REQS ; i++)
+	for (int i = 0; i < batch ; i++)
 	{
 		cqe = wait_cqe_fast(&ring);
-		if (cqe->user_data != 1)
+	
+		// printf("res:%d flags:%d\n", cqe->res, cqe->flags);
+
+		if (cqe->res == 0) // ZC notifier cqe 
+		{
+			//assert(cqe->flags & IORING_CQE_F_NOTIF);
+			// assert(!(cqe->flags & IORING_CQE_F_MORE));
+			i--;
+		//	io_uring_cqe_seen(&ring, cqe);
+		}
+	
+		else if (cqe->user_data != 1)
 		{
 			printf("invalid cqe user data\n");
 			exit(1);	
 		}
-		else if (cqe->res == 0) // ZC notifier cqe 
-		{
-			i--;
-		}
 				
 		else if (cqe->res > 0) // real cqe
 		{
+			// assert(cqe->flags & IORING_CQE_F_MORE); // a cqe notific is about to be received
 			packets++;
 			bytes += cqe->res;
 		}
+	
 		else
 		{
 			printf("send failed:%d\n", cqe->res);
@@ -294,7 +296,6 @@ int allocate_send_buffers(int chunk_size)
         }
         if (first_link)
         {
-                // make this a circular list
                 first_link->next = temp_link;
         }
 	temp_link = first_link;
