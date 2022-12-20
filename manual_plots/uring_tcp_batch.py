@@ -54,4 +54,4 @@ figure.text(0.04, 0.5,'Throughput [Gbps]', va='center', rotation='vertical')
 plt.suptitle('IO Uring - TCP TX - Throughput (Batch)')
 
 plt.savefig('io_uring_tcp_tx_batch.pdf', format='pdf')
-
+plt.savefig('io_uring_tcp_tx_batch.png', format='png')

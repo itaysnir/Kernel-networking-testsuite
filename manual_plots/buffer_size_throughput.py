@@ -79,4 +79,4 @@ plt.legend()
 plt.title('Throughput (Buffer Size)')
 
 plt.savefig('buffer_size_throughput.pdf', format='pdf')
-
+plt.savefig('buffer_size_throughput.png', format='png')
