@@ -12,7 +12,7 @@ source "$GENERIC_TEST"
 readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_tcp_tx/io_uring_tcp_tx"
 readonly CHUNK_SIZE=16384
 readonly TIMEOUT=30
-readonly BATCH=64
+readonly BATCH=8
 
 
 run_test() {

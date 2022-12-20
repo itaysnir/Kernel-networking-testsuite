@@ -20,6 +20,7 @@ readonly OUT_DIR="$RESULTS_DIR/$TEST_NAME/$DATE"
 readonly COLLECT_CPU="$TESTS_ROOT/data_collectors/collect_net_cpu.sh"
 readonly COLLECT_SCRIPT="$TESTS_ROOT/data_collectors/collect.sh"
 readonly COLLECT_PCM_SCRIPT="$TESTS_ROOT/data_collectors/collect_pcm.sh"
+readonly WATCH_SCRIPT="$TESTS_ROOT/data_collectors/watch.pl"
 readonly MS_IN_SEC=1000
 readonly CPU_0="0x00000001"
 
@@ -198,7 +199,7 @@ run_test_multiple_times() {
 		sleep "$RAMP"	
 		
 		log_info "Collecting data.."
-		$COLLECT_CPU "$if1" "$test_dir" &> /dev/null &
+		$COLLECT_CPU "$if1" "$test_dir" &>> "$test_dir/result.txt" &
 		collect_cpu_pid=$!
 		
 		$COLLECT_SCRIPT &>> "$test_dir/result.txt" &
@@ -207,12 +208,18 @@ run_test_multiple_times() {
 		$COLLECT_PCM_SCRIPT &>> "$test_dir/result_pcm.txt" &
 		collect_pcm_pid=$!
 
+		cd "$TESTS_ROOT/data_collectors"
+		$WATCH_SCRIPT &>> "$test_dir/result_watch.txt" &
+		watch_pid=$!
+		cd -
+
 		sleep "$TIMEOUT"
 		log_info "Done sending packets"
 
 		wait "$collect_cpu_pid"
 		wait "$collect_pid"
 		wait "$collect_pcm_pid"
+		wait "$watch_pid"
 	done
 }
 

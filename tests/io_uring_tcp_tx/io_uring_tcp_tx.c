@@ -8,8 +8,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <netinet/ip.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 #include "liburing.h"
@@ -52,6 +54,15 @@ struct ring_elt {
 } while(0)
 
 
+static unsigned long gettimeofday_s(void)
+{
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	return tv.tv_sec;
+}
+
+
 static inline struct io_uring_cqe *wait_cqe_fast(struct io_uring *ring)
 {
 	struct io_uring_cqe *cqe;
@@ -71,7 +82,7 @@ static inline struct io_uring_cqe *wait_cqe_fast(struct io_uring *ring)
 
 
 static bool cfg_fixed_files = 1;
-
+static char payload[IP_MAXPACKET] __attribute__((aligned(4096)));
 void *buff;
 struct ring_elt *prev_link = NULL;
 struct ring_elt *temp_link = NULL;
@@ -81,7 +92,7 @@ int alignment = 256;
 
 static int do_send(const char* host, int port, int chunk_size, int timeout, int batch)
 {
-	struct io_uring_cqe *cqes[MAX_CQES];
+//	struct io_uring_cqe *cqes[MAX_CQES];
 
 	struct sockaddr_in saddr;
 	struct io_uring ring;
@@ -101,9 +112,6 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	saddr.sin_port = htons(port);
 	inet_pton(AF_INET, host, &saddr.sin_addr);
 	
-//	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-	
-
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		perror("socket");
@@ -124,13 +132,11 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
         inet_aton("0.0.0.0", (struct in_addr*)&local_addr.sin_addr.s_addr);
         bind(sockfd, (struct sockaddr*)&local_addr, sizeof(local_addr));
 
-
 	ret = connect(sockfd, (struct sockaddr *)&saddr, sizeof(saddr));
 	if (ret < 0) {
 		perror("connect");
 		return 1;
 	}
-
 
 	if (cfg_fixed_files)
 	{
@@ -149,13 +155,23 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	}	
 
 
+	// Instead of circular malloc, pinned buffer
+/*
+	struct iovec iov; 
+	iov.iov_base = payload;
+	iov.iov_len = chunk_size;
+	if (io_uring_register_buffers(&ring, &iov, 1) < 0)
+	{
+		perror("io_uring: buffer registration");
+		return 1;
+	}
+*/
 
-
-	time_t endwait = time(NULL) + timeout;
+	uint64_t endwait = gettimeofday_s() + timeout;
 	
-	while (time(NULL) < endwait){
+	while (gettimeofday_s() < endwait){
 
-	for (int m = 0 ; m < MAX_CQES ; m++)
+	for (int m = 0 ; m < batch ; m++)
 	{
 		sqe = io_uring_get_sqe(&ring);
 		if (!sqe)
@@ -165,8 +181,9 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		}
 
 		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
+//		io_uring_prep_send(sqe, sockfd, payload, chunk_size, 0);
 		
-		sqe->user_data = 1 + m;
+		sqe->user_data = 1;
 		if (cfg_fixed_files)
 		{
 			sqe->fd = 0;
@@ -177,30 +194,16 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 
 
 	ret = io_uring_submit(&ring);
-	if (ret != MAX_CQES) {
+	if (ret != batch) 
+	{
 		fprintf(stderr, "submit failed, only submitted: %d\n", ret);
 		goto err;
 	}
 
-/* OLD
-	ret = io_uring_wait_cqe_nr(&ring, &cqe, batch);
-	if (cqe->res == -EINVAL) {
-		fprintf(stdout, "send not supported, skipping\n");
-		close(sockfd);
-		return 0;
-	}
-	if (cqe->res != iov.iov_len) {
-		fprintf(stderr, "failed cqe: %d\n", cqe->res);
-		goto err;
-	}
-
-	CHECK_BATCH(&ring, got, cqes, batch, batch);
-*/
-
-// original itay's batch waiting	
+/* original itay's batch waiting	
 	int retval;	
 	uint32_t completed_requests = 0;
-	while (completed_requests != MAX_CQES)
+	while (completed_requests != batch)
 	{
 		retval = io_uring_wait_cqe_nr(&ring, cqes, batch);
 		if (retval < 0)
@@ -211,29 +214,34 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		completed_requests += batch;
 		io_uring_cq_advance(&ring, batch);	
 	}
+*/
 
-/* from benchmarks
+// from benchmarks
 	struct io_uring_cqe *cqe;
 	uint64_t packets = 0;
 	uint64_t bytes = 0;
 
-	for (int i = 0; i < MAX_CQES ; i++)
+	for (int i = 0; i < batch ; i++)
 	{
 		cqe = wait_cqe_fast(&ring);
-		if (cqe->res > 0)
+		if (cqe->user_data != 1)
+		{
+			perror("bad cqe user_data!");
+		}
+		
+		else if (cqe->res > 0)
 		{
 			packets++;
 			bytes += cqe->res;
 		}
 		else
 		{
-			perror("bad cqe!");
+			perror("bad cqe result");
 		}
 
 		io_uring_cqe_seen(&ring, cqe);
 	}
-*/
-
+	
 	}
 
 	io_uring_queue_exit(&ring);
@@ -247,6 +255,11 @@ err:
 
 int allocate_send_buffers(int chunk_size)
 {
+	for (int i = 0; i < IP_MAXPACKET; i++)
+	{
+		payload[i] = 'a' + (i % 26);
+	}
+
 	for (int i = 1 ; i <= MAX_CQES ; i++)
         {
                 temp_link = (struct ring_elt *)malloc(sizeof(struct ring_elt));
