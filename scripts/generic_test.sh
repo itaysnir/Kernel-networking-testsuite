@@ -90,18 +90,44 @@ run_nc() {
 }
 
 
+__run_netserver_inner(){
+	local port="$1"
+	local affinity="$2"
+
+	# TODO: add assertion check that the remote recv server do exist
+
+	kill_listening_process "$port"
+	sleep 1
+	
+	ssh $loader1 "taskset $affinity sudo netserver -p $port &" &
+        log_info "Launched netserver on $dip1:$port"
+
+}
+
+
 run_netserver() {
+	local servers_count="$1"
+	local port="$REMOTE_PORT"
+	local affinity=0x1
+
         if [ -z "$(ssh $loader1 command -v netserver)" ]; then
                 log_error "No netserver on the remote machine. Try: sudo apt install netserver"
                 exit 1
         fi
 
 	kill_listening_process "netserver"
+	sleep 2
 
-#        ssh $loader1 "taskset $CPU_0 sudo netserver -p $REMOTE_PORT"
-#        log_info "Launched netserver on $dip1:$REMOTE_PORT"
-	sleep 3
+	for i in $(seq 0 $((servers_count - 1)) ); do
+		__run_netserver_inner "$port" "$affinity"
+		port=$((port + 1))	
+		affinity=$((affinity * 2))
+	done	
+
+	sleep 2
+
 }
+
 
 __run_simple_recv_inner(){
 	local port="$1"
@@ -155,7 +181,7 @@ run_test_multiple_times() {
 			run_nc
 		
 		elif [[ "$remote_server" == "netserver" ]]; then
-			run_netserver
+			run_netserver "$servers_count"
 
 		elif [[ "$remote_server" == "simple_recv" ]]; then
 			run_simple_recv "$servers_count"
@@ -181,7 +207,6 @@ run_test_multiple_times() {
 		$COLLECT_PCM_SCRIPT &>> "$test_dir/result_pcm.txt" &
 		collect_pcm_pid=$!
 
-#		wait "$test_pid"
 		sleep "$TIMEOUT"
 		log_info "Done sending packets"
 
