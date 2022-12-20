@@ -102,6 +102,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 
 
 	ret = io_uring_queue_init(MAX_CQES * 2, &ring, IORING_SETUP_COOP_TASKRUN);
+//	ret = io_uring_queue_init(MAX_CQES * 2, &ring, 0);
 	if (ret) {
 		fprintf(stderr, "queue init failed: %d\n", ret);
 		return 1;
