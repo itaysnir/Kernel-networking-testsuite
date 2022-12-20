@@ -12,9 +12,8 @@
 #include <sys/socket.h>
 #include <pthread.h>
 #include <assert.h>
-
+#include <netinet/ip.h>
 #include "liburing.h"
-
 
 
 struct ring_elt {
@@ -56,25 +55,9 @@ struct ring_elt {
 } while(0)
 
 
-static inline struct io_uring_cqe *wait_cqe_fast(struct io_uring *ring)
-{
-	struct io_uring_cqe *cqe;
-	unsigned head;
-	int ret;
-
-	io_uring_for_each_cqe(ring, head, cqe)
-		return cqe;
-
-	ret = io_uring_wait_cqe(ring, &cqe);
-	if (ret){
-		perror("wait_cqe_fast");
-		exit(1);	
-	}
-	return cqe;
-}
+static char payload[IP_MAXPACKET] __attribute__((aligned(4096)));
 
 static bool cfg_fixed_files = 1;
-
 void *buff;
 struct ring_elt *prev_link = NULL;
 struct ring_elt *temp_link = NULL;
@@ -92,10 +75,28 @@ static bool check_cq_empty(struct io_uring *ring)
 }
 */
 
+
+static inline struct io_uring_cqe *wait_cqe_fast(struct io_uring *ring)
+{
+	struct io_uring_cqe *cqe;
+	unsigned head;
+	int ret;
+
+	io_uring_for_each_cqe(ring, head, cqe)
+		return cqe;
+
+	ret = io_uring_wait_cqe(ring, &cqe);
+	if (ret){
+		perror("wait_cqe_fast");
+		exit(1);	
+	}
+	return cqe;
+}
+
 static int do_send(const char* host, int port, int chunk_size, int timeout, int batch)
 {
 //	struct io_uring_cqe *cqes[MAX_CQES];
-
+//	struct iovec iov;
 	struct sockaddr_in saddr;
 	struct io_uring ring;
 	struct io_uring_cqe *cqe;
@@ -153,6 +154,17 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 		}
 	}	
 
+	//iov.iov_base = payload;
+	//iov.iov_len = chunk_size;
+
+	/*
+	ret = io_uring_register_buffers(&ring, &iov, 1);
+	if (ret != 0)
+	{
+		perror("io_uring: buffer registration");
+	}
+	*/
+	
 	if (io_uring_register_ring_fd(&ring) < 0)
 	{
 		perror("io_uring: ring registration");
@@ -164,7 +176,7 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 	time_t endwait = time(NULL) + timeout;
 	
 	while (time(NULL) < endwait){
-
+	
 	for (int m = 0 ; m < NR_REQS ; m++)
 	{
 		sqe = io_uring_get_sqe(&ring);
@@ -176,9 +188,19 @@ static int do_send(const char* host, int port, int chunk_size, int timeout, int 
 
 		//sqe->user_data = 1 + m;
 		sqe->user_data = 1;
-//		io_uring_prep_send(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0);
 		io_uring_prep_send_zc(sqe, sockfd, temp_link->buffer_ptr, chunk_size, 0, 0);	
 		temp_link = temp_link->next;
+
+		/*
+		sqe->user_data = 1;
+		io_uring_prep_send_zc(sqe, sockfd, payload, chunk_size, 0, 0);
+
+		if (cfg_fixed_files)
+		{
+			sqe->fd = 0;
+			sqe->flags = IOSQE_FIXED_FILE;
+		}
+		*/
 	}
 
 
@@ -246,6 +268,11 @@ err:
 
 int allocate_send_buffers(int chunk_size)
 {
+	for (int i = 0; i < IP_MAXPACKET; i++)
+	{
+		payload[i] = 'a' + (i % 26);
+	}
+
 	for (int i = 1 ; i <= MAX_CQES ; i++)
         {
                 temp_link = (struct ring_elt *)malloc(sizeof(struct ring_elt));

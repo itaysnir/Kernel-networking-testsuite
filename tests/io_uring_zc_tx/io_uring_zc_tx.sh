@@ -24,6 +24,7 @@ run_test() {
 	taskset 1 "$IO_URING_BINARY" $dip1 8081 $CHUNK_SIZE $TIMEOUT $BATCH &
 	taskset 1 "$IO_URING_BINARY" $dip1 8082 $CHUNK_SIZE $TIMEOUT $BATCH &
 	taskset 1 "$IO_URING_BINARY" $dip1 8083 $CHUNK_SIZE $TIMEOUT $BATCH &
+	taskset 1 "$IO_URING_BINARY" $dip1 8084 $CHUNK_SIZE $TIMEOUT $BATCH &
 
 
 	#shellcheck disable=SC2086

@@ -92,14 +92,14 @@ run_nc() {
 
 run_netserver() {
         if [ -z "$(ssh $loader1 command -v netserver)" ]; then
-                log_error "No netserver on the remote machine. Try: sudo apt install nc"
+                log_error "No netserver on the remote machine. Try: sudo apt install netserver"
                 exit 1
         fi
 
-	kill_listening_process "$REMOTE_PORT"
+	kill_listening_process "netserver"
 
-        ssh $loader1 "taskset $CPU_0 sudo netserver -p $REMOTE_PORT"
-        log_info "Launched netserver on $dip1:$REMOTE_PORT"
+#        ssh $loader1 "taskset $CPU_0 sudo netserver -p $REMOTE_PORT"
+#        log_info "Launched netserver on $dip1:$REMOTE_PORT"
 	sleep 3
 }
 
@@ -112,8 +112,8 @@ __run_simple_recv_inner(){
 
 	kill_listening_process "$port"
 	sleep 1
-
-	ssh $loader1 "taskset $affinity $server_path $port &" &
+	
+        ssh $loader1 "taskset $affinity $server_path $port &" & 
 	log_info "Launched simple recv server on $dip1:$port"
 }
 
@@ -125,15 +125,15 @@ run_simple_recv(){
 	local affinity=0x1
 	
 	kill_listening_process "recv_server"
-	sleep 1
+	sleep 2
 
 	for i in $(seq 0 $((servers_count - 1)) ); do
-		__run_simple_recv_inner "$port" "$affinity"	
+		__run_simple_recv_inner "$port" "$affinity"
 		port=$((port + 1))	
 		affinity=$((affinity * 2))
 	done	
 
-	sleep 3
+	sleep 2
 }
 
 run_test_multiple_times() {
@@ -157,7 +157,7 @@ run_test_multiple_times() {
 		elif [[ "$remote_server" == "netserver" ]]; then
 			run_netserver
 
-		elif [[ "$remote_server" == "simple_recv" ]];then
+		elif [[ "$remote_server" == "simple_recv" ]]; then
 			run_simple_recv "$servers_count"
 
 		else
@@ -181,7 +181,8 @@ run_test_multiple_times() {
 		$COLLECT_PCM_SCRIPT &>> "$test_dir/result_pcm.txt" &
 		collect_pcm_pid=$!
 
-		wait "$test_pid"
+#		wait "$test_pid"
+		sleep "$TIMEOUT"
 		log_info "Done sending packets"
 
 		wait "$collect_cpu_pid"
