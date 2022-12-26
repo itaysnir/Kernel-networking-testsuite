@@ -96,7 +96,7 @@ int main(int argc, char **argv)
         printf("Socket successfully binded..\n");
    
     // Now server is ready to listen and verification
-    if ((listen(sockfd, 1)) != 0) {
+    if ((listen(sockfd, 10)) != 0) {
         printf("Listen failed...\n");
         exit(0);
     }

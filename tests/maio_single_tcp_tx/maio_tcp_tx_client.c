@@ -15,17 +15,20 @@ const int K_CLIENTS = 1;
 uint32_t port = 8080;
 uint32_t dip = STR_IP(10,1,4,36);
 
-const int K_CHUNK_SIZE = 4<<12;
+const int K_CHUNK_SIZE = 16384;
 void *chunk[CHUNK_NUM];
 
 int main(int argc, char *argv[])
 {
-	if (argc < 2)
+	if (argc < 3)
 	{
-		fprintf(stderr, "Usage: %s <TIMEOUT>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <REMOTE PORT> <TIMEOUT>\n", argv[0]);
 		exit(1);
 	}
 	
+	port = atoi(argv[1]);
+	int timeout = atoi(argv[2]);
+
 	int idxs[K_CLIENTS];
 
 	/* Init Mem*/
@@ -55,7 +58,7 @@ int main(int argc, char *argv[])
 	int next_chunk = 0;
 
 	uint64_t counter=0;
-	time_t endtime = time(NULL) + 10;
+	time_t endtime = time(NULL) + timeout;
 
 	while (time(NULL) < endtime) {
 		for(int i = 0; i < K_CLIENTS; ++i) {
