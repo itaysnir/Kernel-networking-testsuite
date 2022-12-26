@@ -13,14 +13,19 @@ throughput1 = [387, 1328 , 6671, 14121, 19284, 19597]
 throughput2 = [463, 1622, 8816, 17137, 22307, 21290]
 
 # io uring - regular - batch=1
-throughput3 = [305, 1115, 6449, 14949, 20958, 20013] 
+#throughput3 = [305, 1115, 6449, 14949, 20958, 20013] 
 
 # io uring - COOP_TASKRUN disabled - batch=1
-throughput4 = [305, 1120, 6683, 15470, 21100, 19875]  
+#throughput4 = [305, 1120, 6683, 15470, 21100, 19875]  
 
 # io uring - zero copy - batch=64
 throughput5 = [249, 445, 2138, 7095, 20510, 27578]
 
+# io uring - multicore (8 cores) - batch=64
+throughput6 = [27006]
+
+# io uring - multicore (8 cores) - zero copy - batch=64
+throughput7 = [27703]
 
 
 plt.scatter(
@@ -42,23 +47,23 @@ plt.scatter(
         s=30 
         )
 
-plt.scatter(
-        size, 
-        throughput3, 
-        label="uring batch=1 (COOP_TASKRUN enabled)", 
-        color="blue",
-        marker="D",
-        s=30 
-        )
-
-plt.scatter(
-        size, 
-        throughput4, 
-        label="uring batch=1 (COOP_TASKRUN disabled)", 
-        color="black",
-        marker="^",
-        s=30 
-        )
+# plt.scatter(
+#         size, 
+#         throughput3, 
+#         label="uring batch=1 (COOP_TASKRUN enabled)", 
+#         color="blue",
+#         marker="D",
+#         s=30 
+#         )
+# 
+# plt.scatter(
+#         size, 
+#         throughput4, 
+#         label="uring batch=1 (COOP_TASKRUN disabled)", 
+#         color="black",
+#         marker="^",
+#         s=30 
+#         )
 
 plt.scatter(
         size, 
@@ -69,8 +74,6 @@ plt.scatter(
         s=30 
         )
 
-#figure.text(0.5, 0.04, 'Buffer Size [#Bytes]', ha='center')
-#figure.text(0.04, 0.5,'throughput [Gbps]', va='center', rotation='vertical')
 plt.xlabel('Buffer Size [#Bytes]')
 plt.ylabel('Throughput [Gbps]')
 
