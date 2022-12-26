@@ -10,8 +10,8 @@ source "$GENERIC_TEST"
 
 # Test Specific Config
 readonly IO_URING_BINARY="$TESTS_ROOT/tests/io_uring_zc_tx/io_uring_zc_tx"
-readonly CHUNK_SIZE=32768
-readonly TIMEOUT=60
+readonly CHUNK_SIZE=32
+readonly TIMEOUT=30
 readonly BATCH=64
 
 

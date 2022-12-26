@@ -21,11 +21,14 @@ throughput2 = [463, 1622, 8816, 17137, 22307, 21290]
 # io uring - zero copy - batch=64
 throughput5 = [249, 445, 2138, 7095, 20510, 27578]
 
+# io uring - multicore (8 cores) - batch=1
+throughput6 = [1905, 7215, 28223, 28291, 27866, 28105]
+
 # io uring - multicore (8 cores) - batch=64
-throughput6 = [27006]
+throughput8 = [2471, 8903, 28044, 28396, 28191, 27620]
 
 # io uring - multicore (8 cores) - zero copy - batch=64
-throughput7 = [27703]
+throughput7 = [282, 483, 2513, 7378, 25839, 27703]
 
 
 plt.scatter(
@@ -73,6 +76,36 @@ plt.scatter(
         marker="o",
         s=30 
         )
+
+plt.scatter(
+        size, 
+        throughput6, 
+        label="uring multicore=8 batch=1", 
+        color="brown",
+        marker="<",
+        s=30 
+        )
+
+plt.scatter(
+        size, 
+        throughput8, 
+        label="uring multicore=8 batch=64", 
+        color="yellow",
+        marker="^",
+        s=30 
+        )
+
+
+plt.scatter(
+        size, 
+        throughput7, 
+        label="uring zerocopy multicore=8 batch=64", 
+        color="purple",
+        marker=">",
+        s=30 
+        )
+
+
 
 plt.xlabel('Buffer Size [#Bytes]')
 plt.ylabel('Throughput [Gbps]')
