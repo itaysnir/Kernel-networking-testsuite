@@ -30,8 +30,10 @@ run_test() {
 	local out_dir="$OUT_DIR-$i"
 	local cmdline="sudo $MAIO_BINARY $TIMEOUT"
 
+	sudo "$MAIO_BINARY" "$TIMEOUT"
+
 	#shellcheck disable=SC2086
-	sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$out_dir/perf_stat.txt" --append ${cmdline} | tee -a "$out_dir/maio.txt"
+	#sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$out_dir/perf_stat.txt" --append ${cmdline} | tee -a "$out_dir/maio.txt"
 
 #	sudo -E "$PERF" record -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -d -T -o "$out_dir/perf.data" ${cmdline} | tee -a "$out_dir/io_uring.txt"
 #	sudo -E "$PERF" script -i "$out_dir/perf.data" > "$out_dir/perf.txt"
@@ -41,8 +43,8 @@ run_test() {
 main() {
 	init_env
 	init_maio
-	run_test_multiple_times "nc"
-	generate_plots	
+	run_test_multiple_times "simple_recv"
+	#generate_plots	
 }
 
 
