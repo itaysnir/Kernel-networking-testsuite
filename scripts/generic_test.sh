@@ -51,7 +51,7 @@ init_env() {
         fi
 
        # if [ ! -d "$PCM"]; then
-       #        log_error "Missing perf on path:"
+       #        log_error "Missing PCM on path:"
        #	exit 1
        # fi
 

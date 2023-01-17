@@ -40,7 +40,7 @@ function collect_pcm {
 }
 
 #[ "$collect_cpu" != "no" ] && collect_cpu
-#[ "$collect_pstats" != "no" ] && collect_pstats
+[ "$collect_pstats" != "no" ] && collect_pstats
 #[ "$collect_mem_bw" != "no" ] && collect_mem_bw
 #[ "$collect_functions" != "no" ] && collect_functions
 [ "$collect_pcm" != "no" ] && collect_pcm
