@@ -30,7 +30,7 @@ run_test() {
 	local out_dir="$OUT_DIR-$i"
 	local cmdline="sudo $MAIO_BINARY $TIMEOUT"
 
-	sudo "$MAIO_BINARY" "$TIMEOUT"
+	sudo "$MAIO_BINARY" "$TIMEOUT" &
 
 	#shellcheck disable=SC2086
 	#sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$out_dir/perf_stat.txt" --append ${cmdline} | tee -a "$out_dir/maio.txt"
