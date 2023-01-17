@@ -9,7 +9,7 @@ source "$GENERIC_TEST"
 
 
 # Test Specific Config
-readonly CHUNK_SIZE=32
+readonly CHUNK_SIZE=1024
 readonly TIMEOUT=30
 
 

@@ -43,7 +43,7 @@ run_test() {
 main() {
 	init_env
 	init_maio
-	run_test_multiple_times "simple_recv"
+	run_test_multiple_times "simple_recv" 1
 	#generate_plots	
 }
 
