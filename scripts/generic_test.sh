@@ -76,6 +76,7 @@ kill_listening_process(){
 	set -euo pipefail
 }
 
+
 run_nc() {
 	if [ -z "$(ssh $loader1 command -v nc)" ]; then 
 		log_error "No nc on the remote machine. Try: sudo apt install nc"
