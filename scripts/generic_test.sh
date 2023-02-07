@@ -45,10 +45,10 @@ init_env() {
 		fi
 	done
 
-	if [ ! -e "$PERF" ]; then
-                log_error "Missing perf on path: $PERF. Issue: make -C <kernel-source>/tools/ perf_install prefix=/usr/"
-                exit 1
-        fi
+#	if [ ! -e "$PERF" ]; then
+#                log_error "Missing perf on path: $PERF. Issue: make -C <kernel-source>/tools/ perf_install prefix=/usr/"
+#                exit 1
+#        fi
 
        # if [ ! -d "$PCM"]; then
        #        log_error "Missing PCM on path:"

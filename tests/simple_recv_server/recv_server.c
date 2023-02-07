@@ -8,7 +8,7 @@
 #include <unistd.h> // read(), write(), close()
 #include <arpa/inet.h>
 
-#define IFACE_IP "10.1.4.35"
+#define IFACE_IP "10.1.4.36"
 #define MAX_BUFFER_SZ 16384
 #define SA struct sockaddr
    
@@ -70,8 +70,8 @@ int main(int argc, char **argv)
         printf("socket creation failed...\n");
         exit(1);
     }
-    else
-        printf("Socket successfully created..\n");
+
+    printf("Socket successfully created..\n");
 
     int one = 1;
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0){
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
    
     // Binding newly created socket to given IP and verification
     if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
-        printf("socket bind failed...\n");
+        printf("socket bind failed... Are you sure this is the correct IP interface? And port is available?\n");
         exit(0);
     }
     else
