@@ -9,13 +9,13 @@ source "$GENERIC_TEST"
 
 
 # Test Specific Config
-readonly CHUNK_SIZE=1024
+readonly CHUNK_SIZE=32768
 readonly TIMEOUT=30
 
 
 run_test() {
         local i="$1"
-        local cmdline="sudo netperf -H $dip1 -p $REMOTE_PORT -t TCP_STREAM -T 0,0 -l $TIMEOUT -- -m$CHUNK_SIZE -s16M"
+        local cmdline="sudo netperf -H $dip1 -p $REMOTE_PORT -t TCP_STREAM -T 0,1 -l $TIMEOUT -- -m$CHUNK_SIZE -s16M"
 
 
 	sudo netperf -H $dip1 -p $REMOTE_PORT -t TCP_STREAM -T 0,1 -l $TIMEOUT -- -m$CHUNK_SIZE -s16M &

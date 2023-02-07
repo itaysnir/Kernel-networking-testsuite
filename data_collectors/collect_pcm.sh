@@ -2,7 +2,7 @@
 
 perf=/homes/itaysnir/linux-stable/tools/perf/perf
 pcm=/homes/itaysnir/pcm/build/bin
-time=5
+time=2
 
 function collect_cpu {
 	echo " in collect cpu" >&2
@@ -12,9 +12,9 @@ function collect_cpu {
 
 function collect_pstats {
 	echo " in collect pstas" >&2
-	sudo taskset -c 15 $perf stat -a -B -e cycles,instructions,cache-misses,cache-references sleep $time
-	sudo taskset -c 15 $perf stat -a -B -e LLC-store,LLC-store-misses sleep $time
-	sudo taskset -c 15 $perf stat -a -B -e LLC-load,LLC-load-misses sleep $time
+	sudo taskset -c 15 $perf stat -C 0 -B -e cycles,instructions,cache-misses,cache-references sleep $time
+	sudo taskset -c 15 $perf stat -C 0 -B -e LLC-store,LLC-store-misses sleep $time
+	sudo taskset -c 15 $perf stat -C 0 -B -e LLC-load,LLC-load-misses sleep $time
 	echo " out collect pstas" >&2
 }
 
