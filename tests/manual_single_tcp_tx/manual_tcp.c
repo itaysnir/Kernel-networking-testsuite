@@ -134,7 +134,6 @@ struct ring_elt {
 //                     perror("send");
 //		      exit (1);
 //		}
-	
 		sent_len = send(sockfd, temp_link->buffer_ptr, CHUNK, 0);
 		if (sent_len != CHUNK)
 		{

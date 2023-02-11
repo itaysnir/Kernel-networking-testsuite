@@ -141,7 +141,7 @@ __run_simple_recv_inner(){
 	kill_listening_process "$port"
 	sleep 1
 	
-        ssh $loader1 "taskset $affinity $server_path $port &" & 
+        ssh $loader1 "taskset $affinity $server_path $dip1 $port &" & 
 	log_info "Launched simple recv server on $dip1:$port. Core affinity:$affinity"
 }
 

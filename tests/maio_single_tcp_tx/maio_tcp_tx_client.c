@@ -15,7 +15,6 @@ An example of creating a TCP socket and sending Zero-Copy I/O
 
 
 const int K_CLIENTS = 1;
-//uint32_t dip = STR_IP(10,1,4,36);
 
 void *chunk[CHUNK_NUM];
 
@@ -35,8 +34,6 @@ int main(int argc, char *argv[])
 	int timeout = atoi(argv[4]);
 
 	int idxs[K_CLIENTS];
-
-	return 0;
 
 	/* Init Mem*/
 	void *cache = init_hp_memory(PAGE_CNT);

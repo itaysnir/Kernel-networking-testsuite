@@ -8,7 +8,6 @@
 #include <unistd.h> // read(), write(), close()
 #include <arpa/inet.h>
 
-#define IFACE_IP "10.1.4.36"
 #define MAX_BUFFER_SZ 16384
 #define SA struct sockaddr
    
@@ -58,12 +57,13 @@ int main(int argc, char **argv)
     int sockfd, connfd, len;
     struct sockaddr_in servaddr, cli;
 
-    if (argc != 2) {
-            fprintf(stderr,"usage: %s <LISTEN_PORT>\n", argv[0]);
+    if (argc != 3) {
+            fprintf(stderr,"usage: %s <INTERFACE_IP> <LISTEN_PORT>\n", argv[0]);
             exit(1);
         } 
 
-    int server_port = atoi(argv[1]);
+    char *server_ip = argv[1];
+    int server_port = atoi(argv[2]);
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
@@ -83,8 +83,7 @@ int main(int argc, char **argv)
    
     // assign IP, PORT
     servaddr.sin_family = AF_INET;
-//    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    inet_aton(IFACE_IP, (struct in_addr*)&servaddr.sin_addr.s_addr);
+    inet_aton(server_ip, (struct in_addr*)&servaddr.sin_addr.s_addr);
     servaddr.sin_port = htons(server_port);
    
     // Binding newly created socket to given IP and verification
