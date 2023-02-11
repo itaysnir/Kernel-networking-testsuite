@@ -4,7 +4,7 @@ HUGE_PATH=/'mnt/huge'
 echo "setup hugepages"
 
 sudo sh -c "echo 2048 > /proc/sys/vm/nr_hugepages"
-sudo sh -c "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+#sudo sh -c "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
 sudo mkdir -p $HUGE_PATH
 sudo mount -t hugetlbfs none $HUGE_PATH
 

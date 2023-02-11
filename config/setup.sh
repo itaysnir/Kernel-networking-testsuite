@@ -87,7 +87,8 @@ set_remote_interfaces() {
         tmp_str="dif$i"
         dif="${!tmp_str}"
 
-        log_info "Setting remote interface $dif on $dip.."
+	ssh "$loader1" sudo ifconfig "eth1" "0.0.0.0"
+	log_info "Removed remote interface eth1 config"
 
         ssh "$loader1" sudo ifconfig "$dif" "$dip" netmask 255.255.255.0 mtu "$mtu"
         set +euo pipefail
@@ -98,6 +99,8 @@ set_remote_interfaces() {
         ssh "$loader1" sudo ethtool -A "$dif" rx "$PFC" tx "$PFC" &> /dev/null
         ssh "$loader1" sudo ethtool -K "$dif" tx-nocache-copy "$TX_CACHE" &> /dev/null
         set -euo pipefail
+
+        log_info "Set remote interface $dif on $dip"
 
     done
 }

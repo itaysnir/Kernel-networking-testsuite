@@ -13,7 +13,6 @@ An example of creating a TCP socket and sending Zero-Copy I/O
 #define CHUNK_NUM	2048
 #define SWAP_32(x)  ( (( (x) >> 24 ) &0xff) | (( (x) << 8 ) &0xff0000) | (( (x) >> 8) &0xff00) | (( (x) << 24) &0xff000000) )
 
-
 const int K_CLIENTS = 1;
 
 void *chunk[CHUNK_NUM];
@@ -30,7 +29,14 @@ int main(int argc, char *argv[])
 	inet_pton(AF_INET, argv[1], &rem_ip);
 	rem_ip = SWAP_32(rem_ip);
 	uint32_t port = atoi(argv[2]);
-	uint32_t chunk_size = atoi(argv[3]); // 16-64 KB are good vlues
+	const int chunk_size = atoi(argv[3]); // 16-64 KB are good vlues
+
+	if (chunk_size > 16384)
+	{
+		printf("Maio crashes for large buffers.. exiting\n");
+		exit(1);
+	}
+
 	int timeout = atoi(argv[4]);
 
 	int idxs[K_CLIENTS];
