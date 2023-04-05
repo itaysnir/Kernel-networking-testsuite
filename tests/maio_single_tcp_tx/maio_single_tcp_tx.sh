@@ -18,7 +18,6 @@ init_maio() {
 	local huge_path="/mnt/huge"
 
 	sudo sh -c "echo 2048 > /proc/sys/vm/nr_hugepages"
-	sudo sh -c "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
 	sudo mkdir -p "$huge_path"
 	sudo mount -t hugetlbfs none "$huge_path"
 
@@ -31,7 +30,7 @@ run_test() {
 	local out_dir="$OUT_DIR-$i"
 	local cmdline="sudo $MAIO_BINARY $TIMEOUT"
 
-	taskset 1 "$MAIO_BINARY" $dip1 8080 $CHUNK_SIZE "$TIMEOUT" &
+	sudo taskset 1 "$MAIO_BINARY" $dip1 8080 $CHUNK_SIZE "$TIMEOUT" &
 
 	#shellcheck disable=SC2086
 	#sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$out_dir/perf_stat.txt" --append ${cmdline} | tee -a "$out_dir/maio.txt"
