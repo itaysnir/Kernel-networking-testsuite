@@ -10,8 +10,8 @@ source "$GENERIC_TEST"
 
 # Test Specific Config
 readonly MAIO_BINARY="$TESTS_ROOT/tests/maio_single_tcp_tx/maio_tcp_tx_client"
+readonly CHUNK_SIZE=16384
 readonly TIMEOUT=30
-#readonly CHUNK_SIZE=32000
 
 
 init_maio() {
@@ -31,7 +31,7 @@ run_test() {
 	local out_dir="$OUT_DIR-$i"
 	local cmdline="sudo $MAIO_BINARY $TIMEOUT"
 
-	sudo "$MAIO_BINARY" "$TIMEOUT" &
+	taskset 1 "$MAIO_BINARY" $dip1 8080 $CHUNK_SIZE "$TIMEOUT" &
 
 	#shellcheck disable=SC2086
 	#sudo -E "$PERF" stat -D $(( RAMP * MS_IN_SEC )) -a -C 0 -e duration_time,task-clock,cycles,instructions,cache-misses -x, -o "$out_dir/perf_stat.txt" --append ${cmdline} | tee -a "$out_dir/maio.txt"

@@ -7,6 +7,7 @@ An example of creating a TCP socket and sending Zero-Copy I/O
 #include <stdlib.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
 #include "user_maio.h"
 
 #define PAGE_CNT	512
