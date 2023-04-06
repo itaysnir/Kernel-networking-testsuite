@@ -1,7 +1,6 @@
 {
     "title": "Uring-ZC batch=64",
     "valid": "true",
-    "type": "regular",
     "x_values": [
         1, 
         16, 

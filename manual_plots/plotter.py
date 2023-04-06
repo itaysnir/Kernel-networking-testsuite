@@ -30,6 +30,7 @@ class Plotter:
 
         def __init__(self, samples_dir: Path = DEFAULT_SAMPLES_DIR) -> None:
                 self._samples_dir: Path = samples_dir
+                self._samples: List[Dict[str, Any]] = None
                 
 
         def init(self) -> None:
@@ -39,8 +40,10 @@ class Plotter:
 
                 self.DEFAULT_OUTPUT_PLOTS_DIR.mkdir(exist_ok=True)
 
+                self._samples = self._read_samples()
 
-        def _read_samples(self) -> List[Dict]:
+
+        def _read_samples(self) -> List[Dict[str, Any]]:
                 json_data = list()
 
                 for path in self._samples_dir.iterdir():
@@ -50,15 +53,6 @@ class Plotter:
 
                 return json_data
         
-
-        @staticmethod
-        def get_cmap(n, name='hsv'):
-                '''
-                Returns a function that maps each index in 0, 1, ..., n-1 to a distinct RGB color; 
-                the keyword argument name must be a standard mpl colormap name.
-                '''
-                return plt.cm.get_cmap(name, n)
-
 
         @staticmethod
         def _plot_single_sample(sample: Dict[str, Any], color: str) -> None:
@@ -84,10 +78,8 @@ class Plotter:
 
 
         def plot_throughput(self) -> None:
-                samples = self._read_samples()
-
-                for i, sample in enumerate(samples):
-                        if sample['valid'] != 'true' or sample['type'] != 'regular':
+                for i, sample in enumerate(self._samples):
+                        if sample['valid'] != 'true':
                                 continue
                         max_colors = len(mcolors.BASE_COLORS)
                         if i >= max_colors:
@@ -102,14 +94,38 @@ class Plotter:
                 plt.legend()
                 plt.title('Throughput - Packet Size')
 
-                self._save_to_file(filename='throughput') 
+                self._save_to_file(filename='throughput-all') 
+
+
+        def plot_bars(self) -> None:
+                fig = plt.figure()
+                ax = fig.add_axes([0.15,0.15,0.7,0.7])
+                plt.xticks(rotation=20)
+
+                networking_type = list()
+                throughput_64k = list()
+
+                for sample in self._samples:
+                        if sample['valid'] != 'true':
+                                continue
+                        networking_type.append(sample['title'])
+                        throughput_64k.append(sample['y_values'][-1])
+                
+                ax.bar(networking_type, throughput_64k)
+
+                plt.ylabel('Throughput [Mbps]')
+                plt.title('Throughput - 64K Packets')
+
+                self._save_to_file(filename='throughput-64k')
+
 
 def main():
         p = Plotter()
         p.init()
         p.plot_throughput()
-#        p.plot_bars()
+        p.plot_bars()
  
+
 def generate_plots():
         # io uring - multicore (8 cores) - batch=1
         # throughput6 = [172, 1905, 7215, 28223, 28291, 27866, 28105][:len(size)]
