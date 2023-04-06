@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import json
 from typing import List, Dict, Any
 from pathlib import Path
@@ -26,7 +24,7 @@ class TooManySamples(PlotterException):
 
 class Plotter:
         DEFAULT_SAMPLES_DIR = Path('samples')
-        DEFAULT_OUTPUT_PLOTS_DIR = Path('plots')
+        DEFAULT_OUTPUT_PLOTS_DIR = Path('result_plots')
 
         def __init__(self, samples_dir: Path = DEFAULT_SAMPLES_DIR) -> None:
                 self._samples_dir: Path = samples_dir
@@ -117,52 +115,3 @@ class Plotter:
                 plt.title('Throughput - 64K Packets')
 
                 self._save_to_file(filename='throughput-64k')
-
-
-def main():
-        p = Plotter()
-        p.init()
-        p.plot_throughput()
-        p.plot_bars()
- 
-
-def generate_plots():
-        # io uring - multicore (8 cores) - batch=1
-        # throughput6 = [172, 1905, 7215, 28223, 28291, 27866, 28105][:len(size)]
-        # io uring - multicore (8 cores) - batch=64
-        # throughput8 = [197, 2471, 8903, 28044, 28396, 28191, 27620][:len(size)]
-        # io uring - multicore (8 cores) - zero copy - batch=64
-        # throughput7 = [216, 282, 483, 2513, 7378, 25839, 27703][:len(size)]
-
-        '''
-        plt.scatter(
-        size, 
-        throughput6, 
-        label="uring multicore=8 batch=1", 
-        color="yellow",
-        marker="+",
-        s=30 
-        )
-
-        plt.scatter(
-        size, 
-        throughput8, 
-        label="uring multicore=8 batch=64", 
-        color="blue",
-        marker="+",
-        s=30 
-        )
-
-        plt.scatter(
-        size, 
-        throughput7, 
-        label="uring zerocopy multicore=8 batch=64", 
-        color="purple",
-        marker="+",
-        s=30 
-        )
-        '''
-
-
-if __name__ == '__main__':
-        main()
