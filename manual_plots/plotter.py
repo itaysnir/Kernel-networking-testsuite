@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
 import json
-from typing import List, Dict
+from typing import List, Dict, Any
 from pathlib import Path
 from logging import Logger
 
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 
 logger = Logger(__name__)
@@ -16,6 +17,10 @@ class PlotterException(Exception):
 
 
 class MissingSamples(PlotterException):
+        pass
+
+
+class TooManySamples(PlotterException):
         pass
 
 
@@ -41,119 +46,77 @@ class Plotter:
                 for path in self._samples_dir.iterdir():
                         with path.open() as fp:
                                 data = json.load(fp)
-                                data['filename'] = path.stem
                                 json_data.append(data)
 
                 return json_data
+        
 
-        def plot(self) -> None:
+        @staticmethod
+        def get_cmap(n, name='hsv'):
+                '''
+                Returns a function that maps each index in 0, 1, ..., n-1 to a distinct RGB color; 
+                the keyword argument name must be a standard mpl colormap name.
+                '''
+                return plt.cm.get_cmap(name, n)
+
+
+        @staticmethod
+        def _plot_single_sample(sample: Dict[str, Any], color: str) -> None:
+                sample_title = sample['title']
+                plt.plot(
+                        sample['x_values'], 
+                        sample['y_values'], 
+                        label=sample_title, 
+                        color=color,
+                        linestyle="--",
+                        markersize=12
+                )
+
+
+        @classmethod
+        def _save_to_file(cls, filename: str) -> None:
+                pdf_path = cls.DEFAULT_OUTPUT_PLOTS_DIR / (filename + '.pdf')
+                png_path = cls.DEFAULT_OUTPUT_PLOTS_DIR / (filename + '.png')
+
+                plt.savefig(pdf_path, format='pdf')
+                plt.savefig(png_path, format='png')
+
+
+
+        def plot_throughput(self) -> None:
                 samples = self._read_samples()
-                for sample in samples:
-                        sample_filename = sample['filename']
-                        sample_title = sample['title']
-                        plt.figure()
-                        plt.yscale('log')
-                        plt.plot(
-                                sample['x_values'], 
-                                sample['y_values'], 
-                                label=sample_title, 
-                                color="blue",
-                                linestyle="--",
-                                marker="+",
-                                markersize=12
-                        )
-                        plt.title(sample_title)
 
-                        pdf_path = self.DEFAULT_OUTPUT_PLOTS_DIR / (sample_filename + '.pdf')
-                        png_path = self.DEFAULT_OUTPUT_PLOTS_DIR / (sample_filename + '.png')
+                for i, sample in enumerate(samples):
+                        if sample['valid'] != 'true' or sample['type'] != 'regular':
+                                continue
+                        max_colors = len(mcolors.BASE_COLORS)
+                        if i >= max_colors:
+                                logger.warning(f'This script only supports up to {max_colors} samples on the same graph')
+                                raise TooManySamples()
 
-                        plt.savefig(pdf_path, format='pdf')
-                        plt.savefig(png_path, format='png')
+                        self._plot_single_sample(sample, color=list(mcolors.BASE_COLORS.keys())[i])
+                        
 
+                plt.xlabel('Packet Size [Bytes]')
+                plt.ylabel('Throughput [Mbps]')
+                plt.legend()
+                plt.title('Throughput - Packet Size')
+
+                self._save_to_file(filename='throughput') 
 
 def main():
         p = Plotter()
         p.init()
-        p.plot()
+        p.plot_throughput()
+#        p.plot_bars()
  
 def generate_plots():
- 
-        size = [1, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]
-
-        large_index = 6
-        start_index = 0
-        end_index = len(size)
-
-        size = size[start_index:end_index]
-
-        # netperf 
-        throughput1 = [42, 190, 357, 684, 1328, 2293, 4135, 6671, 10048, 14121, 17726, 19821, 20225, 20047][start_index:end_index]
-
-        # io uring - send - batch=64
-        throughput2 = [46, 235, 463, 859, 1622, 2960, 5376, 8816, 13884, 17137, 22456, 23058, 22341, 22148][start_index:end_index]
-
-
-        # io uring - regular - batch=1
-        throughput3 = [42, 154, 287, 543, 1115, 1985, 3593, 6449, 10241, 14949, 20473, 20958, 20990, 21339][start_index:end_index]
-
-
-        # io uring - zero copy - batch=64
-        throughput5 = [184, 218, 249, 319, 445, 726, 1170, 2138, 3828, 7095, 13988, 20510, 27578, 27521][start_index:end_index]
-
-
         # io uring - multicore (8 cores) - batch=1
         # throughput6 = [172, 1905, 7215, 28223, 28291, 27866, 28105][:len(size)]
-
-
         # io uring - multicore (8 cores) - batch=64
         # throughput8 = [197, 2471, 8903, 28044, 28396, 28191, 27620][:len(size)]
-
-
         # io uring - multicore (8 cores) - zero copy - batch=64
         # throughput7 = [216, 282, 483, 2513, 7378, 25839, 27703][:len(size)]
-
-
-
-        plt.plot(
-                size, 
-                throughput1, 
-                label="netperf", 
-                color="green",
-                linestyle="--",
-                marker="+",
-                markersize=12
-        )
-
-
-        plt.plot(
-                size, 
-                throughput2, 
-                label="uring batch=64 (optimal)", 
-                color="red",
-                linestyle="--",
-                marker="+",
-                markersize=12 
-        )
-
-        plt.plot(
-                size, 
-                throughput3, 
-                label="uring batch=1", 
-                color="yellow",
-                linestyle="--",
-                marker="+",
-                markersize=12 
-        )
-
-        plt.plot(
-                size,
-                throughput5,
-                label="uring zerocopy batch=64",
-                color="blue",
-                linestyle="--",
-                marker="+",
-                markersize=12
-        )
 
         '''
         plt.scatter(
@@ -183,18 +146,6 @@ def generate_plots():
         s=30 
         )
         '''
-
-        #plt.xscale('log')
-
-        plt.xlabel('Buffer Size [#Bytes]')
-        plt.ylabel('Throughput [Mbps]')
-
-        plt.legend()
-
-        plt.title('Buffer Size - Throughput')
-
-        plt.savefig('buffer_size_throughput.pdf', format='pdf')
-        plt.savefig('buffer_size_throughput.png', format='png')
 
 
 if __name__ == '__main__':
