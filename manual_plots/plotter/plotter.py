@@ -1,4 +1,6 @@
+import math
 import json
+
 from typing import List, Dict, Any
 from pathlib import Path
 from logging import Logger
@@ -95,23 +97,25 @@ class Plotter:
                 self._save_to_file(filename='throughput-all') 
 
 
-        def plot_bars(self) -> None:
+        def plot_bars(self, packet_size: int) -> None:
                 fig = plt.figure()
                 ax = fig.add_axes([0.15,0.15,0.7,0.7])
                 plt.xticks(rotation=20)
 
                 networking_type = list()
-                throughput_64k = list()
+                throughput = list()
+
+                size_index = 0 if packet_size == 1 else int(math.log(packet_size, 2)) - 3  # See the measured values in the .json files
 
                 for sample in self._samples:
                         if sample['valid'] != 'true':
                                 continue
                         networking_type.append(sample['title'])
-                        throughput_64k.append(sample['y_values'][-1])
+                        throughput.append(sample['y_values'][size_index])
                 
-                ax.bar(networking_type, throughput_64k)
+                ax.bar(networking_type, throughput)
 
                 plt.ylabel('Throughput [Mbps]')
-                plt.title('Throughput - 64K Packets')
+                plt.title(f'Throughput - Packet-Size = {packet_size}B')
 
-                self._save_to_file(filename='throughput-64k')
+                self._save_to_file(filename=f'throughput-{packet_size}')
