@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 import json
-from typing import List
+from typing import List, Dict
 from pathlib import Path
 from logging import Logger
 
@@ -35,16 +35,40 @@ class Plotter:
                 self.DEFAULT_OUTPUT_PLOTS_DIR.mkdir(exist_ok=True)
 
 
-        def _read_samples(self) -> List[]:
+        def _read_samples(self) -> List[Dict]:
                 json_data = list()
 
-                for sample in self._samples_dir.iterdir():
-                        with sample.open() as fp:
-                                json_data.append(json.load(fp))
+                for path in self._samples_dir.iterdir():
+                        with path.open() as fp:
+                                data = json.load(fp)
+                                data['filename'] = path.stem
+                                json_data.append(data)
 
+                return json_data
 
         def plot(self) -> None:
                 samples = self._read_samples()
+                for sample in samples:
+                        sample_filename = sample['filename']
+                        sample_title = sample['title']
+                        plt.figure()
+                        plt.yscale('log')
+                        plt.plot(
+                                sample['x_values'], 
+                                sample['y_values'], 
+                                label=sample_title, 
+                                color="blue",
+                                linestyle="--",
+                                marker="+",
+                                markersize=12
+                        )
+                        plt.title(sample_title)
+
+                        pdf_path = self.DEFAULT_OUTPUT_PLOTS_DIR / (sample_filename + '.pdf')
+                        png_path = self.DEFAULT_OUTPUT_PLOTS_DIR / (sample_filename + '.png')
+
+                        plt.savefig(pdf_path, format='pdf')
+                        plt.savefig(png_path, format='png')
 
 
 def main():
