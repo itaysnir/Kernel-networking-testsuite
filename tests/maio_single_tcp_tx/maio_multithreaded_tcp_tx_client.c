@@ -23,12 +23,8 @@ int chunk_size = 0;
 int timeout = 0;
 
 
-void* maio_tx_thread(void *arg)
+void* maio_tx_thread(void *cache)
 {
-	/* Init Mem*/
-	void *cache = init_hp_memory(PAGE_CNT / 2);
-	printf("init memory and get page %p\n", cache);
-
 	/* create + connect */
 	void *chunk[CHUNK_NUM];
 	int idxs[K_CLIENTS];
@@ -89,11 +85,15 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	/* Init Mem*/
+	void *cache = init_hp_memory(PAGE_CNT / 2);
+	printf("init memory and get page %p\n", cache);
+
 	pthread_t thread_1;
 	pthread_t thread_2;
 
-	int result_1 = pthread_create(&thread_1, NULL, maio_tx_thread, NULL);
-	int result_2 = pthread_create(&thread_2, NULL, maio_tx_thread, NULL);
+	int result_1 = pthread_create(&thread_1, NULL, maio_tx_thread, cache);
+	int result_2 = pthread_create(&thread_2, NULL, maio_tx_thread, cache);
 	pthread_join(thread_1, NULL);
 	pthread_join(thread_2, NULL);
 	
