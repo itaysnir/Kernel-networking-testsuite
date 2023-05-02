@@ -17,37 +17,18 @@ An example of creating a TCP socket and sending Zero-Copy I/O
 
 const int K_CLIENTS = 1;
 
-void *chunk[CHUNK_NUM];
+uint32_t rem_ip = 0;
+uint32_t port = 0;
+int chunk_size = 0;
+int timeout = 0;
 
-int main(int argc, char *argv[])
+
+void* maio_tx_thread(void *cache)
 {
-	if (argc < 3)
-	{
-		fprintf(stderr, "Usage: %s <IP> <PORT> <CHUNK_SIZE> <TIMEOUT>\n", argv[0]);
-		exit(1);
-	}
-
-	uint32_t rem_ip = 0;
-	inet_pton(AF_INET, argv[1], &rem_ip);
-	rem_ip = SWAP_32(rem_ip);
-	uint32_t port = atoi(argv[2]);
-	const int chunk_size = atoi(argv[3]); // 16-64 KB are good vlues
-
-	if (chunk_size > 16384)
-	{
-		printf("Maio crashes for large buffers.. exiting\n");
-		exit(1);
-	}
-
-	int timeout = atoi(argv[4]);
-
+	/* create + connect */
+	void *chunk[CHUNK_NUM];
 	int idxs[K_CLIENTS];
 
-	/* Init Mem*/
-	void *cache = init_hp_memory(PAGE_CNT);
-	printf("init memory and get page %p\n", cache);
-
-	/* create + connect */
 	for(int i = 0; i < K_CLIENTS; ++i) {
 		int idx = create_connected_socket(rem_ip, port);
 		printf("Connected maio sock =%d to port %d\n", idx, port);
@@ -55,7 +36,6 @@ int main(int argc, char *argv[])
 		init_tcp_ring(idx, cache);
 		++port;
 	}
-
 
 	/* init ring */
 	// init_tcp_ring(idx, cache);
@@ -82,5 +62,39 @@ int main(int argc, char *argv[])
 	};
 
 	printf("Packets sent:%lu\n", counter);
+}
+
+
+int main(int argc, char *argv[])
+{
+	if (argc < 3)
+	{
+		fprintf(stderr, "Usage: %s <IP> <PORT> <CHUNK_SIZE> <TIMEOUT>\n", argv[0]);
+		exit(1);
+	}
+
+	inet_pton(AF_INET, argv[1], &rem_ip);
+	rem_ip = SWAP_32(rem_ip);
+	port = atoi(argv[2]);
+	chunk_size = atoi(argv[3]); // 16-64 KB are good values
+	timeout = atoi(argv[4]);
+
+	if (chunk_size > 16384)
+	{
+		printf("Maio crashes for large buffers.. exiting\n");
+		exit(1);
+	}
+
+	/* Init Mem*/
+	void *cache = init_hp_memory(PAGE_CNT);
+	printf("init memory and get page %p\n", cache);
+
+	pthread_t thread_1;
+
+	int result_1 = pthread_create(&thread_1, NULL, maio_tx_thread, cache);
+	pthread_join(thread_1, NULL);
+	
+	printf("Thread 1 returns: %d\n", result_1);
+
 	return 0;
 }
